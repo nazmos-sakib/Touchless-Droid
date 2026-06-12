@@ -1,6 +1,7 @@
 package com.example.touchlessdroid
 
 import android.Manifest
+import android.app.Application
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -35,6 +36,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
@@ -167,7 +169,11 @@ fun MainApp(modifier: Modifier = Modifier){
         }
     )
     // Bluetooth ViewModel
-    val bluetoothViewModel: BluetoothViewModel = viewModel()
+    val bluetoothViewModel: BluetoothViewModel = viewModel(
+        factory = ViewModelProvider.AndroidViewModelFactory.getInstance(
+            context.applicationContext as Application
+        )
+    )
 
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()

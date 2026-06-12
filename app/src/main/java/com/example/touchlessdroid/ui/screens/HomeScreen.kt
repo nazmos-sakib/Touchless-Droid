@@ -28,7 +28,9 @@ fun HomeScreen(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
-        Text("Home")
+        if (!bluetoothViewModel.isBluetoothEnabled()) {
+            Text("⚠️ Bluetooth is OFF")
+        }
 
         Spacer(Modifier.height(16.dp))
 
