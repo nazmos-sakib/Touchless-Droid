@@ -2,7 +2,7 @@ package com.example.touchlessdroid.utils
 
 import android.os.Build
 import androidx.compose.ui.geometry.Size
-import com.example.touchlessdroid.domain.model.ReverseMapping
+import com.example.touchlessdroid.domain.model.camera.ReverseMapping
 import kotlin.math.max
 
 object Utility {

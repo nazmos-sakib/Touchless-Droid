@@ -2,14 +2,14 @@ package com.example.touchlessdroid.utils
 
 
 import android.graphics.RectF
-import com.example.touchlessdroid.domain.model.DetectedObject
-import com.example.touchlessdroid.domain.model.DetectedPose
-import com.example.touchlessdroid.domain.model.Keypoint
-import com.example.touchlessdroid.domain.model.LetterboxResultV2
-import com.example.touchlessdroid.domain.model.ReverseMapping
-import com.example.touchlessdroid.domain.model.deNormalize
-import com.example.touchlessdroid.domain.model.mapFromModel
-import com.example.touchlessdroid.domain.model.mapToPreview
+import com.example.touchlessdroid.domain.model.camera.DetectedObject
+import com.example.touchlessdroid.domain.model.camera.DetectedPose
+import com.example.touchlessdroid.domain.model.camera.Keypoint
+import com.example.touchlessdroid.domain.model.camera.LetterboxResultV2
+import com.example.touchlessdroid.domain.model.camera.ReverseMapping
+import com.example.touchlessdroid.domain.model.camera.deNormalize
+import com.example.touchlessdroid.domain.model.camera.mapFromModel
+import com.example.touchlessdroid.domain.model.camera.mapToPreview
 import com.example.touchlessdroid.utils.extentions.mapFromModel
 import com.example.touchlessdroid.utils.extentions.mapToPreview
 

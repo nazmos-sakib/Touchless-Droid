@@ -90,5 +90,7 @@ dependencies {
 
     //live data
     implementation("androidx.compose.runtime:runtime-livedata:1.11.2")
+    implementation("androidx.compose.material:material-icons-extended")
+    implementation("androidx.navigation:navigation-compose:2.9.8")
 
 }

@@ -2,9 +2,9 @@ package com.example.touchlessdroid.utils.extentions
 
 import android.graphics.RectF
 import androidx.compose.ui.geometry.Size
-import com.example.touchlessdroid.domain.model.LetterboxResult
-import com.example.touchlessdroid.domain.model.LetterboxResultV2
-import com.example.touchlessdroid.domain.model.ReverseMapping
+import com.example.touchlessdroid.domain.model.camera.LetterboxResult
+import com.example.touchlessdroid.domain.model.camera.LetterboxResultV2
+import com.example.touchlessdroid.domain.model.camera.ReverseMapping
 import kotlin.math.max
 
 

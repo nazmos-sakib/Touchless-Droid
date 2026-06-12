@@ -10,9 +10,9 @@ import androidx.core.graphics.scale
 import com.example.touchlessdroid.utils.YOLOPostprocessor
 import kotlin.math.min
 import androidx.core.graphics.createBitmap
-import com.example.touchlessdroid.domain.model.DetectedPose
-import com.example.touchlessdroid.domain.model.LetterboxResultV2
-import com.example.touchlessdroid.domain.model.ReverseMapping
+import com.example.touchlessdroid.domain.model.camera.DetectedPose
+import com.example.touchlessdroid.domain.model.camera.LetterboxResultV2
+import com.example.touchlessdroid.domain.model.camera.ReverseMapping
 import org.tensorflow.lite.Tensor
 import java.nio.ByteOrder
 import kotlin.IntArray

@@ -1,4 +1,4 @@
-package com.example.touchlessdroid.ui.screens
+package com.example.touchlessdroid.ui.screens.camera
 
 import android.graphics.Paint
 import android.graphics.RectF
@@ -44,9 +44,9 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.touchlessdroid.domain.model.DetectedPose
-import com.example.touchlessdroid.domain.model.Keypoint
-import com.example.touchlessdroid.domain.model.Pose
+import com.example.touchlessdroid.domain.model.camera.DetectedPose
+import com.example.touchlessdroid.domain.model.camera.Keypoint
+import com.example.touchlessdroid.domain.model.camera.Pose
 import com.example.touchlessdroid.ui.viewmodel.CameraViewModel
 import com.example.touchlessdroid.utils.ChoreographerFPSMonitor
 import com.example.touchlessdroid.utils.Constants.PerformanceDebugTag
@@ -114,8 +114,7 @@ fun CameraScreen(viewModel: CameraViewModel) {
     val scope = rememberCoroutineScope()
 
     Box(modifier = Modifier
-        .fillMaxSize()
-        .statusBarsPadding(),
+        .fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
 
@@ -206,7 +205,7 @@ fun CameraScreen(viewModel: CameraViewModel) {
                     },
                     modifier = Modifier
                         //.align(Alignment.TopStart)
-                        .padding(16.dp,5.dp) ,
+                        .padding(16.dp,0.dp) ,
                     color = Color.White,
                     fontSize = 14.sp
                 )
@@ -232,7 +231,7 @@ fun CameraScreen(viewModel: CameraViewModel) {
                     text = "PreviewView FPS: ${"%.1f".format(previewViewFps)}",
                     modifier = Modifier
                         //.align(Alignment.TopStart)
-                        .padding(16.dp,5.dp),
+                        .padding(16.dp,0.dp),
                     color = Color.White,
                     fontSize = 14.sp
                 )
@@ -240,7 +239,7 @@ fun CameraScreen(viewModel: CameraViewModel) {
                     text = "ImageProxy FPS: ${"%.1f".format(imageProxyFps)}",
                     modifier = Modifier
                         //.align(Alignment.TopStart)
-                        .padding(16.dp,5.dp),
+                        .padding(16.dp,0.dp),
                     color = Color.White,
                     fontSize = 14.sp
                 )
@@ -248,7 +247,7 @@ fun CameraScreen(viewModel: CameraViewModel) {
                     text = "Inference FPS: ${"%.1f".format(inferenceFps)}",
                     modifier = Modifier
                         //.align(Alignment.TopStart)
-                        .padding(16.dp,5.dp),
+                        .padding(16.dp,0.dp),
                     color = Color.White,
                     fontSize = 14.sp
                 )
@@ -263,7 +262,7 @@ fun CameraScreen(viewModel: CameraViewModel) {
             )
 
             Box(
-                modifier = Modifier.weight(.5f).height(200.dp)
+                modifier = Modifier.weight(.5f).height(150.dp)
             ) {
                 // FPS and processing indicator
                 if (isProcessing) {

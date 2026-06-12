@@ -1,7 +1,7 @@
 package com.example.touchlessdroid.domain.usecase
 
-import com.example.touchlessdroid.domain.model.Keypoint
-import com.example.touchlessdroid.domain.model.Pose
+import com.example.touchlessdroid.domain.model.camera.Keypoint
+import com.example.touchlessdroid.domain.model.camera.Pose
 import kotlin.math.abs
 import kotlin.math.sqrt
 

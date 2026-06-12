@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.view.WindowManager
@@ -15,28 +16,48 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.ModalDrawerSheet
+import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
 import com.example.touchlessdroid.data.datasource.LocalModelDataSource
 import com.example.touchlessdroid.data.repository.ObjectDetectionRepository
-import com.example.touchlessdroid.ui.screens.CameraScreen
+import com.example.touchlessdroid.domain.model.Screen
+import com.example.touchlessdroid.ui.screens.DrawerContent
+import com.example.touchlessdroid.ui.screens.HomeScreen
+import com.example.touchlessdroid.ui.screens.InfoScreen
+import com.example.touchlessdroid.ui.screens.PairDeviceScreen
+import com.example.touchlessdroid.ui.screens.SavedDevicesScreen
+import com.example.touchlessdroid.ui.screens.SettingsScreen
+import com.example.touchlessdroid.ui.screens.StatusBar
+import com.example.touchlessdroid.ui.screens.camera.CameraScreen
 import com.example.touchlessdroid.ui.theme.TouchlessDroidTheme
+import com.example.touchlessdroid.ui.viewmodel.BluetoothViewModel
 import com.example.touchlessdroid.ui.viewmodel.CameraViewModel
 import com.example.yolo26localposeanalyzer.ui.screens.PermissionDeniedScreen
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -47,7 +68,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             TouchlessDroidTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    CameraPermissionHandler {
+                    AppPermissionHandler {
                         MainApp(Modifier.padding(innerPadding))
                     }
                 }
@@ -67,38 +88,46 @@ class MainActivity : ComponentActivity() {
 
 
 @Composable
-fun CameraPermissionHandler(
+fun AppPermissionHandler(
     content: @Composable () -> Unit
 ) {
     val context = LocalContext.current
 
-    var permissionGranted by remember { mutableStateOf(false) }
+    val permissions = mutableListOf(
+        Manifest.permission.CAMERA
+    ).apply {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            add(Manifest.permission.BLUETOOTH_CONNECT)
+            add(Manifest.permission.BLUETOOTH_SCAN)
+        } else {
+            add(Manifest.permission.ACCESS_FINE_LOCATION)
+        }
+    }
+
+    var allGranted by remember { mutableStateOf(false) }
     var showSettings by remember { mutableStateOf(false) }
 
-    val permissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
-        permissionGranted = isGranted
-        showSettings = !isGranted
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { results ->
+        allGranted = results.values.all { it }
+        showSettings = !allGranted
     }
 
     LaunchedEffect(Unit) {
-        val granted = ContextCompat.checkSelfPermission(
-            context,
-            Manifest.permission.CAMERA
-        ) == PackageManager.PERMISSION_GRANTED
+        val granted = permissions.all {
+            ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
+        }
 
         if (granted) {
-            permissionGranted = true
+            allGranted = true
         } else {
-            permissionLauncher.launch(Manifest.permission.CAMERA)
+            launcher.launch(permissions.toTypedArray())
         }
     }
 
     when {
-        permissionGranted -> {
-            content()
-        }
+        allGranted -> content()
 
         showSettings -> {
             PermissionDeniedScreen(
@@ -110,14 +139,14 @@ fun CameraPermissionHandler(
                     context.startActivity(intent)
                 },
                 onRetry = {
-                    permissionLauncher.launch(Manifest.permission.CAMERA)
+                    launcher.launch(permissions.toTypedArray())
                 }
             )
         }
 
         else -> {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("Requesting camera permission...")
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text("Requesting permissions...")
             }
         }
     }
@@ -127,17 +156,99 @@ fun CameraPermissionHandler(
 @Composable
 fun MainApp(modifier: Modifier = Modifier){
 
-    // Create repository and ViewModel
-    val context = LocalContext.current
+     val context = LocalContext.current
+    // Camera ViewModel (your existing one)
     val repository = ObjectDetectionRepository(LocalModelDataSource(context))
-    val viewModel: CameraViewModel = viewModel(
+    val cameraViewModel: CameraViewModel = viewModel(
         factory = viewModelFactory {
             initializer {
                 CameraViewModel(repository)
             }
         }
     )
+    // Bluetooth ViewModel
+    val bluetoothViewModel: BluetoothViewModel = viewModel()
 
-    CameraScreen(viewModel = viewModel)
+    val navController = rememberNavController()
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
 
+    val drawerState = rememberDrawerState(DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
+    var appDrawerSelectedRoute by remember {
+        mutableStateOf(Screen.Home.route)
+    }
+    //observe changes in the route
+    LaunchedEffect(currentRoute) {
+        currentRoute?.let {route->
+            // Do something whenever the route changes
+            //println("Route changed: $route")
+            //if current route is to discover near by devices the then enable bluetooth discovery mode.
+            appDrawerSelectedRoute = route
+            //if (route== ROUTE_PAIR_NEW_DEVICE) viewModel.startScan() else viewModel.stopScan()
+        }
+    }
+    ModalNavigationDrawer(
+        modifier = modifier,
+        drawerState = drawerState,
+        drawerContent = {
+            ModalDrawerSheet {
+                DrawerContent(appDrawerSelectedRoute) { route ->
+                    scope.launch { drawerState.close() }
+                    navController.navigate(route) {
+                        popUpTo(Screen.Home.route)
+                        launchSingleTop = true
+                    }
+                }
+            }
+        }
+    ) {
+        Scaffold(
+            topBar = {
+                StatusBar(
+                    bluetoothViewModel = bluetoothViewModel,
+                    onMenuClick = {
+                        scope.launch { drawerState.open() }
+                    }
+                )
+            }
+        ) { innerPadding ->
+
+            NavHost(
+                navController = navController,
+                startDestination = Screen.Home.route,
+                modifier = Modifier.padding(innerPadding)
+            ) {
+
+                composable(Screen.Home.route) {
+                    HomeScreen(
+                        bluetoothViewModel = bluetoothViewModel,
+                        onStartClick = {
+                            navController.navigate(Screen.Camera.route)
+                        }
+                    )
+                }
+
+                composable(Screen.Camera.route) {
+                    CameraScreen(viewModel = cameraViewModel)
+                }
+
+                composable(Screen.Pair.route) {
+                    PairDeviceScreen(bluetoothViewModel)
+                }
+
+                composable(Screen.Saved.route) {
+                    SavedDevicesScreen(bluetoothViewModel)
+                }
+
+                composable(Screen.Settings.route) {
+                    SettingsScreen()
+                }
+
+                composable(Screen.Info.route) {
+                    InfoScreen()
+                }
+            }
+        }
+    }
 }

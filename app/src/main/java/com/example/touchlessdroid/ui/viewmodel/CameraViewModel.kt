@@ -11,9 +11,9 @@ import androidx.camera.view.PreviewView
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.touchlessdroid.data.repository.ObjectDetectionRepository
-import com.example.touchlessdroid.domain.model.DetectedPose
-import com.example.touchlessdroid.domain.model.ReverseMapping
-import com.example.touchlessdroid.domain.model.toPose
+import com.example.touchlessdroid.domain.model.camera.DetectedPose
+import com.example.touchlessdroid.domain.model.camera.ReverseMapping
+import com.example.touchlessdroid.domain.model.camera.toPose
 import com.example.touchlessdroid.domain.usecase.GestureDetector
 import com.example.touchlessdroid.utils.Constants.ImageDebugTag
 import com.example.touchlessdroid.utils.Constants.PerformanceDebugTag

@@ -1,4 +1,4 @@
-package com.example.touchlessdroid.ui.screens
+package com.example.touchlessdroid.ui.screens.camera
 
 import android.graphics.Rect
 import android.util.Log

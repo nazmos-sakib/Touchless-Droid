@@ -1,4 +1,4 @@
-package com.example.touchlessdroid.domain.model
+package com.example.touchlessdroid.domain.model.camera
 
 import android.graphics.RectF
 
