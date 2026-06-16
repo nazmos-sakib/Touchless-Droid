@@ -2,13 +2,14 @@ package com.example.touchlessdroid.domain.usecase
 
 import com.example.touchlessdroid.domain.model.camera.Keypoint
 import com.example.touchlessdroid.domain.model.camera.Pose
+import com.example.touchlessdroid.domain.model.camera.RobotCommand
 import kotlin.math.abs
 import kotlin.math.sqrt
 
 
 class GestureDetector {
 
-    fun detect(p: Pose): String {
+    fun detect(p: Pose): RobotCommand {
 
         val ls = p.leftShoulder
         val rs = p.rightShoulder
@@ -34,7 +35,8 @@ class GestureDetector {
         if (rs.ky < re.ky && re.ky+distance(re,rw)*.9f < rw.ky &&
             ls.ky < le.ky && le.ky+distance(le,lw)*.9f < lw.ky
         ) {
-            return "NEUTRAL"
+            //return "NEUTRAL"
+            return RobotCommand.NEUTRAL
         }
 
         /* -------------------------
@@ -53,7 +55,8 @@ class GestureDetector {
             re.kx > rw.kx && re.kx > rs.kx
         ) {
             //return "EMERGENCY_STOP"
-            return "STOP"
+            //return "STOP"
+            return RobotCommand.STOP
         }
 
         /* -------------------------
@@ -83,7 +86,8 @@ class GestureDetector {
             lw.kx < le.kx && le.kx < ls.kx   &&
             rw.kx > re.kx && re.kx > rs.kx
         ) {
-            return "START"
+            //return "START"
+            return RobotCommand.START
         }
 
         // -------------------------
@@ -95,7 +99,8 @@ class GestureDetector {
             lw.kx < le.kx && le.kx < ls.kx &&
             rs.kx < re.kx && re.kx < rw.kx
         ) {
-            return "FORWARD"
+            //return "FORWARD"
+            return RobotCommand.FORWARD
         }
 
         // -------------------------
@@ -117,7 +122,8 @@ class GestureDetector {
             isBelowShoulder(re.ky) && re.ky+distance(re,rw)*.5f < rw.ky &&
             isBelowShoulder(le.ky) && le.ky+distance(le,lw)*.5f < lw.ky
         ) {
-            return "BACKWARD"
+            //return "BACKWARD"
+            return RobotCommand.BACKWARD
         }
 
         // -------------------------
@@ -147,7 +153,8 @@ class GestureDetector {
             lw.kx < le.kx && le.kx < ls.kx  &&
             rs.ky < re.ky && re.ky+distance(re,rw)*.8f < rw.ky
         ) {
-            return "TURN_LEFT"
+            //return "TURN_LEFT"
+            return RobotCommand.TURN_LEFT
         }
 
         // -------------------------
@@ -159,14 +166,11 @@ class GestureDetector {
             rw.kx > re.kx && re.kx > rs.kx  &&
             ls.ky < le.ky && le.ky+distance(le,lw)*.8f < lw.ky
         ) {
-            return "TURN_RIGHT"
+            //return "TURN_RIGHT"
+            return RobotCommand.TURN_RIGHT
         }
-
-
-
-
-
-        return "NONE"
+        //return "NONE"
+        return RobotCommand.NONE
     }
 
     fun distance(p: Keypoint, q: Keypoint): Float {

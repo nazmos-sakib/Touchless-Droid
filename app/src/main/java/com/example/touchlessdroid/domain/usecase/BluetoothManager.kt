@@ -6,31 +6,72 @@ import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothSocket
-import android.content.BroadcastReceiver
 import android.content.Context
-import android.content.Intent
 import android.content.IntentFilter
-import android.content.pm.PackageManager
 import androidx.annotation.RequiresPermission
-import androidx.core.app.ActivityCompat
+import com.example.touchlessdroid.data.repository.BluetoothDataTransfer
+import com.example.touchlessdroid.data.repository.broadcast_receiver.BluetoothConnectionStateReceiver
+import com.example.touchlessdroid.data.repository.broadcast_receiver.FoundDeviceReceiver
+import com.example.touchlessdroid.domain.model.bluetooth.BlDataTransferStatus
 import com.example.touchlessdroid.domain.model.bluetooth.BluetoothDeviceLocal
-import com.example.touchlessdroid.domain.model.bluetooth.BluetoothStatus
+import com.example.touchlessdroid.domain.model.bluetooth.BluetoothConnectionStatus
 import com.example.touchlessdroid.domain.model.bluetooth.toBluetoothDeviceLocal
+import com.example.touchlessdroid.domain.model.camera.RobotCommand
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.OutputStream
 import java.util.UUID
 
 @SuppressLint("MissingPermission")
-class BluetoothManager(private val context: Context) {
+class BluetoothManager(private val context: Context):
+    BluetoothDataTransfer {
 
-    private val bluetoothManager =
+    private val bluetoothManager by lazy {
         context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
-    private val bluetoothAdapter = bluetoothManager.adapter
+    }
+    private val bluetoothAdapter by lazy {
+        bluetoothManager.adapter
+    }
 
-    private val _foundDevices = MutableStateFlow<List<BluetoothDevice>>(emptyList())
-    val foundDevices: StateFlow<List<BluetoothDevice>> = _foundDevices
+    private val _errors = MutableSharedFlow<String>()
+    val errors: SharedFlow<String>
+        get() = _errors.asSharedFlow()
+
+    //broadcast receiver -----------------------------------------------
+    //broadcast receiver to get bluetooth device list when search
+    private val _foundDevices = MutableStateFlow<List<BluetoothDeviceLocal>>(emptyList())
+    val foundDevices: StateFlow<List<BluetoothDeviceLocal>>
+        get() = _foundDevices.asStateFlow()
+    private val foundDeviceBroadcastReceiver = FoundDeviceReceiver { device ->
+        _foundDevices.update { devices ->
+            val newDevice = device.toBluetoothDeviceLocal()
+            if (newDevice in devices) devices else devices + newDevice
+        }
+    }
+    //broadcast receiver - when a connection is interrupted with an existed connected device
+    private val _connectionState = MutableStateFlow(BluetoothConnectionStatus.DISCONNECTED)
+    val connectionState: StateFlow<BluetoothConnectionStatus> = _connectionState
+    private val bluetoothStateReceiver = BluetoothConnectionStateReceiver{ status, bluetoothDevice ->
+        if (bluetoothAdapter?.bondedDevices?.contains(bluetoothDevice) == true){
+            _connectionState.update {status}
+        } else {
+            CoroutineScope(Dispatchers.IO).launch {
+                _errors.emit("Disconnected: can't connect to a non-paired device")
+                _connectionState.update {status}
+            }
+        }
+    }
+    //end -- broadcast receiver -----------------------------------------------
+
 
     private val _pairedDevices = MutableStateFlow<List<BluetoothDeviceLocal>>(emptyList())
     val pairedDevices: StateFlow<List<BluetoothDeviceLocal>>
@@ -38,13 +79,22 @@ class BluetoothManager(private val context: Context) {
 
     init {
         updatePairedDevises()
+        //register bluetoothConnectionStateReceiver
+        context.registerReceiver(
+            bluetoothStateReceiver,
+            //intent_filter take one arguments
+            IntentFilter().apply {
+                addAction(BluetoothAdapter.ACTION_CONNECTION_STATE_CHANGED)
+                addAction(BluetoothDevice.ACTION_ACL_CONNECTED)
+                addAction(BluetoothDevice.ACTION_ACL_DISCONNECTED)
+            }
+        )
     }
 
-    private val _connectionState = MutableStateFlow(BluetoothStatus.DISCONNECTED)
-    val connectionState: StateFlow<BluetoothStatus> = _connectionState
+
 
     private var socket: BluetoothSocket? = null
-
+    private var outputStream: OutputStream? = null
     fun isBluetoothEnabled(): Boolean {
         return bluetoothAdapter?.isEnabled == true
     }
@@ -55,7 +105,7 @@ class BluetoothManager(private val context: Context) {
 
         val filter = IntentFilter(BluetoothDevice.ACTION_FOUND)
 
-        context.registerReceiver(receiver, filter)
+        context.registerReceiver(foundDeviceBroadcastReceiver, filter)
 
         bluetoothAdapter?.startDiscovery()
     }
@@ -64,22 +114,11 @@ class BluetoothManager(private val context: Context) {
     fun stopDiscovery() {
         bluetoothAdapter?.cancelDiscovery()
         try {
-            context.unregisterReceiver(receiver)
+            context.unregisterReceiver(foundDeviceBroadcastReceiver)
         } catch (_: Exception) {}
     }
 
-    private val receiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) {
-            if (BluetoothDevice.ACTION_FOUND == intent.action) {
-                val device: BluetoothDevice? =
-                    intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)
 
-                device?.let {
-                    _foundDevices.value += it
-                }
-            }
-        }
-    }
 
     @RequiresPermission(
         allOf = [
@@ -88,27 +127,46 @@ class BluetoothManager(private val context: Context) {
         ]
     )
     fun connect(device: BluetoothDevice) {
-        _connectionState.value = BluetoothStatus.CONNECTING
+        _connectionState.value = BluetoothConnectionStatus.CONNECTING
 
-        Thread   {
-            try {
-                val uuid: UUID =
-                    device.uuids?.firstOrNull()?.uuid
-                        ?: UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
+        try {
+            val uuid: UUID =
+                device.uuids?.firstOrNull()?.uuid
+                    ?: UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
 
-                socket = device.createRfcommSocketToServiceRecord(uuid)
+            socket = device.createRfcommSocketToServiceRecord(uuid)
 
-                bluetoothAdapter?.cancelDiscovery()
+            bluetoothAdapter?.cancelDiscovery()
 
-                socket?.connect()
+            socket?.connect()
+            outputStream = socket?.outputStream
 
-                _connectionState.value = BluetoothStatus.CONNECTED
+            _connectionState.value = BluetoothConnectionStatus.CONNECTED
 
-            } catch (e: Exception) {
-                e.printStackTrace()
-                _connectionState.value = BluetoothStatus.DISCONNECTED
+        } catch (e: Exception) {
+            e.printStackTrace()
+            _connectionState.value = BluetoothConnectionStatus.DISCONNECTED
+        }
+    }
+
+    fun send(command: String) {
+        outputStream?.write((command + "\n").toByteArray())
+    }
+
+    override suspend fun sendCommand(command: RobotCommand): BlDataTransferStatus {
+        return try {
+            val stream = outputStream
+                ?: return BlDataTransferStatus.NotConnected
+
+            withContext(Dispatchers.IO) {
+                stream.write((command.name + "\n").toByteArray())
             }
-        }.start()
+
+            BlDataTransferStatus.Success
+
+        } catch (e: Exception) {
+            BlDataTransferStatus.Error(e.message ?: "Unknown error")
+        }
     }
 
     fun disconnect() {
@@ -116,7 +174,7 @@ class BluetoothManager(private val context: Context) {
             socket?.close()
         } catch (_: Exception) {}
 
-        _connectionState.value = BluetoothStatus.DISCONNECTED
+        _connectionState.value = BluetoothConnectionStatus.DISCONNECTED
     }
 
     fun getBlAdapter() : BluetoothAdapter = bluetoothAdapter

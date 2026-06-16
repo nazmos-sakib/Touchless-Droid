@@ -22,5 +22,6 @@ fun InfoScreen() {
 
         Text("Touchless Droid v1.0")
         Text("Built with CameraX + Bluetooth")
+        Text("Tensorflow lite - Yolo26 pose model")
     }
 }

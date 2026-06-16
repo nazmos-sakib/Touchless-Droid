@@ -1,4 +1,4 @@
-package com.example.touchlessdroid.ui.screens.camera
+package com.example.touchlessdroid.ui.screens.components.camera
 
 import android.graphics.Paint
 import android.graphics.RectF
@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
@@ -84,7 +83,7 @@ fun CameraScreen(viewModel: CameraViewModel) {
     val imageProxyAspectRation = AspectRatio.RATIO_4_3
     //val imageProxyAspectRation = AspectRatio.RATIO_16_9
 
-    val context = LocalContext.current
+    //val context = LocalContext.current
 
     //================Preview FPS monitor
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -273,7 +272,7 @@ fun CameraScreen(viewModel: CameraViewModel) {
                     )
                 }
                 Text(
-                    text = cmd,
+                    text = cmd.name,
                     modifier = Modifier
                         .padding(horizontal = 10.dp ,vertical = 50.dp)
                         .align(Alignment.BottomCenter)

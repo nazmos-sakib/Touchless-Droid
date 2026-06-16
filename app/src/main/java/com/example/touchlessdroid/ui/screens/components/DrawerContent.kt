@@ -1,4 +1,4 @@
-package com.example.touchlessdroid.ui.screens
+package com.example.touchlessdroid.ui.screens.components
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer

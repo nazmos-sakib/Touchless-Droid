@@ -2,12 +2,15 @@ package com.example.touchlessdroid.domain.model.camera
 
 
 enum class RobotCommand {
+    NEUTRAL,
     STOP,
-    EMERGENCY_STOP,
+    START,
+    //EMERGENCY_STOP,
     FORWARD,
-    FORWARD_SLOW,
+    //FORWARD_SLOW,
     BACKWARD,
-    LEFT,
-    RIGHT,
-    NONE
+    TURN_LEFT,
+    TURN_RIGHT,
+    NONE,
+    NO_PERSON
 }

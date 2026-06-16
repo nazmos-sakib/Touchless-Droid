@@ -1,14 +1,10 @@
-package com.example.touchlessdroid.ui.screens
+package com.example.touchlessdroid.ui.screens.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
@@ -26,7 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.example.touchlessdroid.domain.model.bluetooth.BluetoothStatus
+import com.example.touchlessdroid.domain.model.bluetooth.BluetoothConnectionStatus
 import com.example.touchlessdroid.ui.viewmodel.BluetoothViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -36,18 +32,18 @@ fun StatusBar(
     onMenuClick: () -> Unit
 ) {
 
-    val status by bluetoothViewModel.status.collectAsState()
+    val status by bluetoothViewModel.connectionStatus.collectAsState()
 
     val text = when (status) {
-        BluetoothStatus.CONNECTED -> "Connected"
-        BluetoothStatus.CONNECTING -> "Connecting..."
-        BluetoothStatus.DISCONNECTED -> "Not Connected"
+        BluetoothConnectionStatus.CONNECTED -> "Connected"
+        BluetoothConnectionStatus.CONNECTING -> "Connecting..."
+        BluetoothConnectionStatus.DISCONNECTED -> "Not Connected"
     }
 
     val color = when (status) {
-        BluetoothStatus.CONNECTED -> Color(0xFF4CAF50)
-        BluetoothStatus.CONNECTING -> Color(0xFFFFA000)
-        BluetoothStatus.DISCONNECTED -> Color(0xFFD32F2F)
+        BluetoothConnectionStatus.CONNECTED -> Color(0xFF4CAF50)
+        BluetoothConnectionStatus.CONNECTING -> Color(0xFFFFA000)
+        BluetoothConnectionStatus.DISCONNECTED -> Color(0xFFD32F2F)
     }
 
     //BuildInTopAppBar(text,color,onMenuClick)

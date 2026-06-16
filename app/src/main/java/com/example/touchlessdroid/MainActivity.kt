@@ -17,9 +17,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.DrawerValue
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Scaffold
@@ -36,6 +34,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
@@ -47,21 +46,24 @@ import androidx.navigation.compose.rememberNavController
 import com.example.touchlessdroid.data.datasource.LocalModelDataSource
 import com.example.touchlessdroid.data.repository.ObjectDetectionRepository
 import com.example.touchlessdroid.domain.model.Screen
-import com.example.touchlessdroid.ui.screens.DrawerContent
+import com.example.touchlessdroid.ui.screens.components.DrawerContent
 import com.example.touchlessdroid.ui.screens.HomeScreen
 import com.example.touchlessdroid.ui.screens.InfoScreen
 import com.example.touchlessdroid.ui.screens.PairDeviceScreen
 import com.example.touchlessdroid.ui.screens.SavedDevicesScreen
 import com.example.touchlessdroid.ui.screens.SettingsScreen
-import com.example.touchlessdroid.ui.screens.StatusBar
-import com.example.touchlessdroid.ui.screens.camera.CameraScreen
+import com.example.touchlessdroid.ui.screens.components.StatusBar
+import com.example.touchlessdroid.ui.screens.components.camera.CameraScreen
 import com.example.touchlessdroid.ui.theme.TouchlessDroidTheme
 import com.example.touchlessdroid.ui.viewmodel.BluetoothViewModel
 import com.example.touchlessdroid.ui.viewmodel.CameraViewModel
 import com.example.yolo26localposeanalyzer.ui.screens.PermissionDeniedScreen
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+    @androidx.annotation.RequiresPermission(allOf = [android.Manifest.permission.BLUETOOTH_SCAN, android.Manifest.permission.BLUETOOTH_CONNECT])
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) //keep the screen always on
@@ -154,26 +156,17 @@ fun AppPermissionHandler(
     }
 }
 
-
+@androidx.annotation.RequiresPermission(allOf = [android.Manifest.permission.BLUETOOTH_SCAN, android.Manifest.permission.BLUETOOTH_CONNECT])
 @Composable
 fun MainApp(modifier: Modifier = Modifier){
 
      val context = LocalContext.current
     // Camera ViewModel (your existing one)
     val repository = ObjectDetectionRepository(LocalModelDataSource(context))
-    val cameraViewModel: CameraViewModel = viewModel(
-        factory = viewModelFactory {
-            initializer {
-                CameraViewModel(repository)
-            }
-        }
-    )
+    val cameraViewModel: CameraViewModel = hiltViewModel()
+
     // Bluetooth ViewModel
-    val bluetoothViewModel: BluetoothViewModel = viewModel(
-        factory = ViewModelProvider.AndroidViewModelFactory.getInstance(
-            context.applicationContext as Application
-        )
-    )
+    val bluetoothViewModel: BluetoothViewModel = hiltViewModel()
 
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -189,7 +182,7 @@ fun MainApp(modifier: Modifier = Modifier){
         currentRoute?.let {route->
             // Do something whenever the route changes
             //println("Route changed: $route")
-            //if current route is to discover near by devices the then enable bluetooth discovery mode.
+            //if current route is to discover nearby devices the then enable bluetooth discovery mode.
             appDrawerSelectedRoute = route
             //if (route== ROUTE_PAIR_NEW_DEVICE) viewModel.startScan() else viewModel.stopScan()
         }

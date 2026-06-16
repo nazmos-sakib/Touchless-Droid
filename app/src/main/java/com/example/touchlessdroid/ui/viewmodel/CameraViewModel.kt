@@ -10,36 +10,44 @@ import androidx.camera.core.ImageProxy
 import androidx.camera.view.PreviewView
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.touchlessdroid.data.repository.BluetoothDataTransfer
 import com.example.touchlessdroid.data.repository.ObjectDetectionRepository
+import com.example.touchlessdroid.domain.model.bluetooth.BlDataTransferStatus
 import com.example.touchlessdroid.domain.model.camera.DetectedPose
 import com.example.touchlessdroid.domain.model.camera.ReverseMapping
+import com.example.touchlessdroid.domain.model.camera.RobotCommand
 import com.example.touchlessdroid.domain.model.camera.toPose
 import com.example.touchlessdroid.domain.usecase.GestureDetector
+import com.example.touchlessdroid.domain.usecase.GestureToCommandUseCase
 import com.example.touchlessdroid.utils.Constants.ImageDebugTag
 import com.example.touchlessdroid.utils.Constants.PerformanceDebugTag
 import com.example.touchlessdroid.utils.Constants.UiDebugTag
 import com.example.touchlessdroid.utils.FpsCounter
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
+import javax.inject.Inject
 
-
-class CameraViewModel(
-    private val repository: ObjectDetectionRepository
+@HiltViewModel
+class CameraViewModel @Inject constructor(
+    private val repository: ObjectDetectionRepository,
+    private val gestureUseCase: GestureToCommandUseCase,
+    private val gestureDetector: GestureDetector
 ) : ViewModel() {
 
     private val inferenceFpsCounter = FpsCounter()
     private val imageProxyFpsCounter = FpsCounter()
 
-    val gestureDetector = GestureDetector()
-    private val _command = MutableStateFlow("NONE")
-    val command: StateFlow<String> = _command
+    private val _command = MutableStateFlow(RobotCommand.NONE)
+    val command: StateFlow<RobotCommand> = _command
 
     private val _detectedObjects = MutableStateFlow<List<DetectedPose>>(emptyList())
     val detectedObjects: StateFlow<List<DetectedPose>> = _detectedObjects.asStateFlow()
@@ -59,6 +67,32 @@ class CameraViewModel(
     init {
         //initializeModel()
         repository.initialize()
+        observeGestures()
+    }
+
+    private fun observeGestures() {
+        viewModelScope.launch {
+            _command
+                //.distinctUntilChanged()
+                .collect { gesture ->
+                    val result = gestureUseCase.process(gesture)
+                    when (result) {
+                        is BlDataTransferStatus.Success -> { /* OK */ }
+
+                        is BlDataTransferStatus.NotConnected -> {
+                            /*_uiState.update {
+                                it.copy(error = "Not connected to device")
+                            }*/
+                        }
+
+                        is BlDataTransferStatus.Error -> {
+                            /*_uiState.update {
+                                it.copy(error = result.message)
+                            }*/
+                        }
+                    }
+                }
+        }
     }
 
     fun  updateImageProxyFPS(){
@@ -79,8 +113,8 @@ class CameraViewModel(
                 val results = repository.detectPose(bitmap,revMapping)
                 // take first person only
                 val pose = results.firstOrNull()?.keyPoints?.toPose()
-                Log.d(UiDebugTag, "processFrame: $pose")
-                val cmd = if (pose != null) gestureDetector.detect(pose) else "NO PERSON"
+                //Log.d(UiDebugTag, "processFrame: $pose")
+                val cmd = if (pose != null) gestureDetector.detect(pose) else RobotCommand.NO_PERSON
 
                 Log.d(UiDebugTag, "viewmodel: processFrame: objects found: ${results.size}")
                 Log.d(UiDebugTag, "viewmodel: processFrame: $results")

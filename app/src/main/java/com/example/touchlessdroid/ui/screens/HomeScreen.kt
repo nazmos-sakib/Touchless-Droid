@@ -20,7 +20,7 @@ fun HomeScreen(
     bluetoothViewModel: BluetoothViewModel,
     onStartClick: () -> Unit
 ) {
-    val status by bluetoothViewModel.status.collectAsState()
+    val status by bluetoothViewModel.connectionStatus.collectAsState()
 
     Column(
         modifier = Modifier.fillMaxSize(),

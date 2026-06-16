@@ -3,20 +3,30 @@ package com.example.touchlessdroid.ui.viewmodel
 import android.Manifest
 import android.app.Application
 import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothSocket
 import androidx.annotation.RequiresPermission
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.touchlessdroid.data.repository.BluetoothDataTransfer
 import com.example.touchlessdroid.domain.model.bluetooth.BluetoothDeviceLocal
+import com.example.touchlessdroid.domain.model.camera.RobotCommand
 import com.example.touchlessdroid.domain.usecase.BluetoothManager
+import dagger.hilt.android.lifecycle.HiltViewModel
+import jakarta.inject.Inject
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+import java.io.OutputStream
 
-class BluetoothViewModel(application: Application) : AndroidViewModel(application) {
-
-    private val manager = BluetoothManager(application)
-    val status = manager.connectionState
+@HiltViewModel
+class BluetoothViewModel @Inject constructor(
+    private val manager: BluetoothManager
+) : ViewModel() {
+    val connectionStatus = manager.connectionState
     val devices = manager.foundDevices
 
     // saved devices list
@@ -38,8 +48,22 @@ class BluetoothViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     @RequiresPermission(allOf = [Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT])
-    fun connect(device: BluetoothDevice) {
-        manager.connect(device)
+    fun connect(device: BluetoothDeviceLocal) {
+        val device = manager.getBlAdapter()
+            .getRemoteDevice(device.address)
+        viewModelScope.launch (Dispatchers.IO) {
+            manager.connect(device)
+        }
+
+    }
+    private var lastSent: RobotCommand? = null
+    fun sendCommand(command: RobotCommand) {
+        if (command == lastSent) return
+        lastSent = command
+
+        viewModelScope.launch(Dispatchers.IO) {
+            manager.send(command.name)
+        }
     }
 
     fun disconnect() =
@@ -51,9 +75,9 @@ class BluetoothViewModel(application: Application) : AndroidViewModel(applicatio
 
     // connect using saved device
     @RequiresPermission(allOf = [Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT])
-    fun connectSavedDevice(bluetoothDevice: com.example.touchlessdroid.domain.model.bluetooth.BluetoothDevice) {
+    fun connectSavedDevice(device: BluetoothDeviceLocal) {
         val device = manager.getBlAdapter()
-            .getRemoteDevice(bluetoothDevice.address)
+            .getRemoteDevice(device.address)
 
         manager.connect(device)
     }
