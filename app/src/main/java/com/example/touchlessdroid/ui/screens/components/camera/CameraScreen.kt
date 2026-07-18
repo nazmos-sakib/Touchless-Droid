@@ -62,6 +62,7 @@ fun CameraScreen(viewModel: CameraViewModel) {
     val imageProxyFps by viewModel.imageProxyFps.collectAsStateWithLifecycle()
     val inferenceFps by viewModel.inferenceFps.collectAsStateWithLifecycle()
     val cmd by viewModel.command.collectAsStateWithLifecycle()
+    val configuration by viewModel.configuration.collectAsStateWithLifecycle()
 
     var previewViewSize: Size by remember { mutableStateOf(Size(0f,0f)) }
     var imageProxySize: Size by remember { mutableStateOf(Size(0f,0f)) }
@@ -210,14 +211,14 @@ fun CameraScreen(viewModel: CameraViewModel) {
                 )
                 Text(
                     text = buildAnnotatedString {
-                        withStyle(style = SpanStyle(color = Color.White)) {
-                            append("Implementation: ")
-                        }
                         withStyle(style = SpanStyle(color = Color.Red)) {
-                            append("TFLite-")
+                            append("${configuration.runtime.label}-")
                         }
                         withStyle(style = SpanStyle(color = Color.Green)) {
-                            append(viewModel.getModelDelegate())
+                            append("${configuration.delegate.label}-")
+                        }
+                        withStyle(style = SpanStyle(color = Color.White)) {
+                            append(configuration.precision.label)
                         }
                     },
                     modifier = Modifier

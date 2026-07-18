@@ -18,7 +18,22 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        @Suppress("UnstableApiUsage")
+        externalNativeBuild {
+            cmake {
+                cppFlags += "-std=c++17"
+            }
+        }
+        ndk {
+            //noinspection ChromeOsAbiSupport
+            abiFilters += listOf(
+                "arm64-v8a",
+                "armeabi-v7a"
+            )
+        }
     }
+
+
 
     buildTypes {
         release {
@@ -40,6 +55,17 @@ android {
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        }
+    }
+    externalNativeBuild {
+        cmake {
+            path = file("src/main/cpp/CMakeLists.txt")
+            version = "3.22.1"
+        }
+    }
+    sourceSets {
+        getByName("main") {
+            jniLibs.srcDirs("src/main/jniLibs")
         }
     }
 }
@@ -79,6 +105,14 @@ dependencies {
     implementation("org.tensorflow:tensorflow-lite:2.17.0")
     implementation("org.tensorflow:tensorflow-lite-gpu:2.17.0")
     implementation("org.tensorflow:tensorflow-lite-gpu-api:2.17.0")
+
+    //ONNX
+    implementation("com.microsoft.onnxruntime:onnxruntime-android:1.18.0")
+
+    //PyTorch
+    implementation("org.pytorch:pytorch_android_lite:2.1.0")
+    implementation("org.pytorch:pytorch_android_torchvision_lite:2.1.0")
+
 
     //dagger-hilt
     implementation("com.google.dagger:hilt-android:2.59.2")

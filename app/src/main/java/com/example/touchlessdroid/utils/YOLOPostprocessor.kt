@@ -5,6 +5,7 @@ import android.graphics.RectF
 import com.example.touchlessdroid.domain.model.camera.DetectedObject
 import com.example.touchlessdroid.domain.model.camera.DetectedPose
 import com.example.touchlessdroid.domain.model.camera.Keypoint
+import com.example.touchlessdroid.domain.model.camera.LetterboxResult
 import com.example.touchlessdroid.domain.model.camera.LetterboxResultV2
 import com.example.touchlessdroid.domain.model.camera.ReverseMapping
 import com.example.touchlessdroid.domain.model.camera.deNormalize
@@ -12,9 +13,93 @@ import com.example.touchlessdroid.domain.model.camera.mapFromModel
 import com.example.touchlessdroid.domain.model.camera.mapToPreview
 import com.example.touchlessdroid.utils.extentions.mapFromModel
 import com.example.touchlessdroid.utils.extentions.mapToPreview
+import kotlin.collections.get
 
 
 object YOLOPostprocessor {
+
+    fun parseOutputShape300x57(
+        batchOutput: Array<FloatArray>,
+        letterBox: LetterboxResult,
+        revMapping: ReverseMapping
+    ): List<DetectedPose> {
+        val detections = mutableListOf<DetectedPose>()
+
+        // Output shape: [1, 300, 57]
+        val numDetections = batchOutput.size // Should be 300
+        //Log.d(ModelOutpuDebugTag, "YoloPostProcess:parseOutputShape300x6: batchOutput: ${batchOutput.size}")
+
+        for (i in 0 until numDetections) {
+            val detection = batchOutput[i]
+
+            // Format: [x1, y1, x2, y2, confidence, class_id]
+            val x1 = detection[0]
+            val y1 = detection[1]
+            val x2 = detection[2]
+            val y2 = detection[3]
+            val confidence = detection[4]
+            val classId = detection[5].toInt()
+
+            // Skip invalid or low confidence detections
+            if (confidence < Constants.CONFIDENCE_THRESHOLD || x1 == 0f && y1 == 0f && x2 == 0f && y2 == 0f) {
+                continue
+            }
+            /*
+            * bounding box values between 0 and 1
+            * [left=0.0237, top=0.6415, right=0.1758, bottom=0.9997]
+            * These are normalized coordinates, NOT pixels.
+            * Convert to pixels:
+            * pixelX = normalizedX * inputWidth
+            * pixelY = normalizedY * inputHeight
+            * */
+            val boundingBox = RectF(x1, y1, x2, y2)
+                .mapFromModel(letterBox)
+                .mapToPreview(revMapping)
+            val label = if (classId < Constants.COCO_CLASSES.size) {
+                Constants.COCO_CLASSES[classId]
+            } else {
+                "unknown"
+            }
+
+
+            // --- KEYPOINTS ---
+            val kptStart = 6
+
+            val keypoints = mutableListOf<Keypoint>()
+
+            //https://github.com/ultralytics/ultralytics/blob/main/ultralytics/cfg/datasets/coco-pose.yaml
+            //details about data points
+            for (k in 0..16) {
+                val kx: Float = detection[kptStart + k * 3]
+                val ky: Float = detection[kptStart + k * 3 + 1]
+                val kc: Float = detection[kptStart + k * 3 + 2]
+
+                /*if (kc > 0.5f) {
+                    keypoints.add(Keypoint(kx, ky, kc))
+                }*/
+                keypoints.add(
+                    Keypoint(kx, ky, kc)
+                        //.deNormalize()
+                        .mapFromModel(letterBox)
+                        .mapToPreview(revMapping)
+                )
+            }
+            detections.add(
+                DetectedPose(
+                    boundingBox = boundingBox,
+                    label = label,
+                    confidence = confidence,
+                    classId = classId,
+                    keyPoints = keypoints
+                )
+            )
+        }
+
+        // Apply Non-Maximum Suppression
+        //return nonMaximumSuppression(detections, Constants.NMS_THRESHOLD)
+        return detections
+    }
+
 
 
     fun parseOutputShape300x57(

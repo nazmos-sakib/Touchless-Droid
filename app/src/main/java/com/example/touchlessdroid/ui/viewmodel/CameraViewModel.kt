@@ -10,8 +10,11 @@ import androidx.camera.core.ImageProxy
 import androidx.camera.view.PreviewView
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.touchlessdroid.data.repository.BluetoothDataTransfer
-import com.example.touchlessdroid.data.repository.ObjectDetectionRepository
+import com.example.touchlessdroid.data.repository.NCNNPoseRepository
+import com.example.touchlessdroid.data.repository.ONNXPoseDetectionRepository
+import com.example.touchlessdroid.data.repository.PyTorchPoseDetectionRepository
+import com.example.touchlessdroid.data.repository.TFLitePoseDetectionRepository
+import com.example.touchlessdroid.domain.model.InferenceConfiguration
 import com.example.touchlessdroid.domain.model.bluetooth.BlDataTransferStatus
 import com.example.touchlessdroid.domain.model.camera.DetectedPose
 import com.example.touchlessdroid.domain.model.camera.ReverseMapping
@@ -22,14 +25,16 @@ import com.example.touchlessdroid.domain.usecase.GestureToCommandUseCase
 import com.example.touchlessdroid.utils.Constants.ImageDebugTag
 import com.example.touchlessdroid.utils.Constants.PerformanceDebugTag
 import com.example.touchlessdroid.utils.Constants.UiDebugTag
+import com.example.touchlessdroid.utils.DelegateOption
 import com.example.touchlessdroid.utils.FpsCounter
+import com.example.touchlessdroid.utils.PrecisionOption
+import com.example.touchlessdroid.utils.RuntimeOption
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -38,7 +43,10 @@ import javax.inject.Inject
 
 @HiltViewModel
 class CameraViewModel @Inject constructor(
-    private val repository: ObjectDetectionRepository,
+    private val tfLiteRepository: TFLitePoseDetectionRepository,
+    private val onnxRepository: ONNXPoseDetectionRepository,
+    private val pyTorchRepository: PyTorchPoseDetectionRepository,
+    private val ncnnRepository: NCNNPoseRepository,
     private val gestureUseCase: GestureToCommandUseCase,
     private val gestureDetector: GestureDetector
 ) : ViewModel() {
@@ -63,11 +71,24 @@ class CameraViewModel @Inject constructor(
     private val _inferenceFps = MutableStateFlow(0f)
     val inferenceFps: StateFlow<Float> = _inferenceFps.asStateFlow()
 
+    private val _configuration = MutableStateFlow(
+        InferenceConfiguration(
+            runtime = RuntimeOption.TFLITE,
+            delegate = DelegateOption.CPU,
+            precision = PrecisionOption.FP32
+        )
+    )
+
+    val configuration: StateFlow<InferenceConfiguration> =
+        _configuration.asStateFlow()
 
     init {
         //initializeModel()
-        repository.initialize()
+        tfLiteRepository.initialize()
         observeGestures()
+    }
+    fun setConfiguration(configuration: InferenceConfiguration) {
+        _configuration.value = configuration
     }
 
     private fun observeGestures() {
@@ -110,7 +131,14 @@ class CameraViewModel @Inject constructor(
 
             try {
                 //val results = repository.detectObjects(bitmap)
-                val results = repository.detectPose(bitmap,revMapping)
+                val results = when(configuration.value.runtime){
+                    RuntimeOption.TFLITE -> tfLiteRepository.detectPose(bitmap,revMapping,configuration.value)
+                    RuntimeOption.ONNX -> onnxRepository.detectPose(bitmap,revMapping,configuration.value)
+                    RuntimeOption.PYTORCH -> pyTorchRepository.detectPose(bitmap,revMapping,configuration.value)
+                    RuntimeOption.NCNN -> ncnnRepository.detectPose(bitmap,revMapping,configuration.value)
+                }
+
+
                 // take first person only
                 val pose = results.firstOrNull()?.keyPoints?.toPose()
                 //Log.d(UiDebugTag, "processFrame: $pose")
@@ -217,9 +245,6 @@ class CameraViewModel @Inject constructor(
 
     }
 
-    fun getModelDelegate(): String{
-        return repository.getModelDelegate()
-    }
 
     fun updateInferenceFPS() {
          inferenceFpsCounter.tick("Inference FPS")

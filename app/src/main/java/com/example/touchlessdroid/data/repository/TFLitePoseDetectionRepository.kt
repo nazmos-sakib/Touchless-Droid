@@ -3,7 +3,7 @@ package com.example.touchlessdroid.data.repository
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
-import com.example.touchlessdroid.data.datasource.LocalModelDataSource
+import com.example.touchlessdroid.data.datasource.TFLiteModelDataSource
 import com.example.touchlessdroid.utils.Constants
 import java.nio.ByteBuffer
 import androidx.core.graphics.scale
@@ -11,6 +11,7 @@ import com.example.touchlessdroid.utils.YOLOPostprocessor
 import kotlin.math.min
 import androidx.core.graphics.createBitmap
 import com.example.touchlessdroid.domain.model.Delegate
+import com.example.touchlessdroid.domain.model.InferenceConfiguration
 import com.example.touchlessdroid.domain.model.camera.DetectedPose
 import com.example.touchlessdroid.domain.model.camera.LetterboxResultV2
 import com.example.touchlessdroid.domain.model.camera.ReverseMapping
@@ -18,8 +19,8 @@ import org.tensorflow.lite.Tensor
 import java.nio.ByteOrder
 import kotlin.IntArray
 
-class ObjectDetectionRepository(
-    private val modelDataSource: LocalModelDataSource
+class TFLitePoseDetectionRepository(
+    private val modelDataSource: TFLiteModelDataSource
 ) {
     private val size: Int
     val inputBuffer:ByteBuffer
@@ -60,7 +61,7 @@ class ObjectDetectionRepository(
      * Detect objects in bitmap
      */
 
-    suspend fun detectPose(bitmap: Bitmap,revMapping: ReverseMapping): List<DetectedPose> {
+    suspend fun detectPose(bitmap: Bitmap,revMapping: ReverseMapping,infConfig:InferenceConfiguration): List<DetectedPose> {
 
         bitmap
         return try {

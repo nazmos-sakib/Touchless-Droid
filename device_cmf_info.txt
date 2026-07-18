@@ -1,0 +1,7 @@
+Manufacturer: Nothing
+Model: A015
+Android Version: 16
+SDK Version: 36
+Hardware: mt6878
+SoC Manufacturer: Mediatek
+SoC Model: MT6878

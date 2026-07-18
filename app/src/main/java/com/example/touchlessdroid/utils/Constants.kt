@@ -3,6 +3,18 @@ package com.example.touchlessdroid.utils
 object Constants {
     const val MODEL_PATH_26N_POSE_INT8 = "yolo26n-pose_int8.tflite"
     const val MODEL_PATH_26N_POSE_INTEGER_QUANT = "yolo26n-pose_integer_quant.tflite"
+    const val MODEL_TFLITE_FP32 = "yolo26n_pose_fp32.tflite"
+    const val MODEL_TFLITE_INT8 = "yolo26n_pose_int8.tflite"
+    const val MODEL_ONNX_FP32 = "yolo26n_pose_fp32.onnx"
+    const val MODEL_ONNX_INT8 = "yolo26n_pose_int8.tflite"
+
+    //ONNX
+    const val MODEL_PATH_26N_POSE_MOBILE = "yolo26n-pose-mobile.onnx"
+
+    //PyTorch
+    const val MODEL_PATH_26N_POSE = "yolo26n-pose.pt"
+    const val MODEL_PATH_26N_POSE_OPTIMIZED = "yolo26n-pose-saved-for-lite-interpreter.pt"
+
 
     // YOLOv8 input size
     const val MODEL_INPUT_SIZE = 640
@@ -36,6 +48,7 @@ object Constants {
     const val CrashDebugTag = "CRASH_DEBUG_TAG"
     const val ModelOutpuDebugTag = "MODEL_OUTPUT_DEBUG_TAG"
 
-
+    const val FLOATS_PER_POSE = 56
+    const val NUM_KEYPOINTS = 17
 
 }

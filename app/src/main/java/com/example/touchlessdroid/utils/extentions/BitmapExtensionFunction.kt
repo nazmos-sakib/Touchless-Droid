@@ -3,6 +3,8 @@ package com.example.touchlessdroid.utils.extentions
 import android.graphics.Bitmap
 import android.graphics.Matrix
 import androidx.camera.core.CameraSelector
+import org.pytorch.Tensor
+import org.pytorch.torchvision.TensorImageUtils
 import java.io.ByteArrayOutputStream
 
 fun Bitmap.rotateBitmap(rotation: Int,cameraSelector: CameraSelector): Bitmap {
@@ -23,4 +25,14 @@ fun Bitmap.bitmapToJpegBytes( ): ByteArray {
     val stream = ByteArrayOutputStream()
     compress(Bitmap.CompressFormat.JPEG, 90, stream)
     return stream.toByteArray()
+}
+
+fun Bitmap.bitmapToTensor(): Tensor {
+    //val resized = this.scale(640, 640)
+
+    return TensorImageUtils.bitmapToFloat32Tensor(
+        this,
+        floatArrayOf(0f, 0f, 0f),
+        floatArrayOf(1f, 1f, 1f)
+    )
 }

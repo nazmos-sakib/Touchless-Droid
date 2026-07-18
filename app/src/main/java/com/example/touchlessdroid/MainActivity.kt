@@ -1,7 +1,6 @@
 package com.example.touchlessdroid
 
 import android.Manifest
-import android.app.Application
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -35,16 +34,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.lifecycle.viewmodel.initializer
-import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.example.touchlessdroid.data.datasource.LocalModelDataSource
-import com.example.touchlessdroid.data.repository.ObjectDetectionRepository
 import com.example.touchlessdroid.domain.model.Screen
 import com.example.touchlessdroid.ui.screens.components.DrawerContent
 import com.example.touchlessdroid.ui.screens.HomeScreen
@@ -161,8 +154,7 @@ fun AppPermissionHandler(
 fun MainApp(modifier: Modifier = Modifier){
 
      val context = LocalContext.current
-    // Camera ViewModel (your existing one)
-    val repository = ObjectDetectionRepository(LocalModelDataSource(context))
+    //val repository = ObjectDetectionRepository(LocalModelDataSource(context))
     val cameraViewModel: CameraViewModel = hiltViewModel()
 
     // Bluetooth ViewModel
@@ -222,7 +214,8 @@ fun MainApp(modifier: Modifier = Modifier){
                 composable(Screen.Home.route) {
                     HomeScreen(
                         bluetoothViewModel = bluetoothViewModel,
-                        onStartClick = {
+                        onStartClick = {configuration ->
+                            cameraViewModel.setConfiguration(configuration)
                             navController.navigate(Screen.Camera.route)
                         }
                     )

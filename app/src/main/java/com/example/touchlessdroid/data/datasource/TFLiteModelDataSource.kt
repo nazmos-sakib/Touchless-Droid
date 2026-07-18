@@ -16,7 +16,7 @@ import java.nio.ByteBuffer
 import java.nio.MappedByteBuffer
 import java.nio.channels.FileChannel
 
-class LocalModelDataSource(private val context: Context) {
+class TFLiteModelDataSource(private val context: Context) {
 
     private var tflite: Interpreter? = null
     private var  nnApiDelegate: NnApiDelegate? = null
