@@ -3,6 +3,7 @@ package com.example.touchlessdroid.data.datasource
 
 import android.content.Context
 import android.util.Log
+import com.example.touchlessdroid.domain.model.Delegate
 import com.example.touchlessdroid.utils.Constants.TFModelDebugTag
 import org.tensorflow.lite.DataType
 import org.tensorflow.lite.Interpreter
@@ -29,16 +30,28 @@ class LocalModelDataSource(private val context: Context) {
      * output shape: [1, 300, 57]
      * data type: FLOAT32
      */
-    fun loadModel(modelPath: String): Interpreter {
+    fun loadModel(modelPath: String,delegate: Delegate): Interpreter {
         // Close existing interpreter if any
         close()
 
+        tflite = when (delegate) {
+            Delegate.CPU -> {
+                createCpuOnlyInterpreter( model = loadModelFile(modelPath))
+            }
+
+            Delegate.GPU -> {
+                createGpuOnlyInterpreter( model = loadModelFile(modelPath))
+            }
+
+            Delegate.NNAPI -> {
+                createNNAPIOnlyInterpreter( model = loadModelFile(modelPath))
+                //tflite = createNNAPIExplicitInterpreter( model = loadModelFile(modelPath))
+            }
+
+        }
 
         //tflite = createInterpreter( model = loadModelFile(modelPath))
-        //tflite = createGpuOnlyInterpreter( model = loadModelFile(modelPath))
-        //tflite = createNNAPIOnlyInterpreter( model = loadModelFile(modelPath))
-        //tflite = createNNAPIExplicitInterpreter( model = loadModelFile(modelPath))
-        tflite = createCpuOnlyInterpreter( model = loadModelFile(modelPath))
+
 
         logTensorInfo("Input",tflite?.getInputTensor(0)!!)
         logTensorInfo("Output",tflite?.getInputTensor(0)!!)

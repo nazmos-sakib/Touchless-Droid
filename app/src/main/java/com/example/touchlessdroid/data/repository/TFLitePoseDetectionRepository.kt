@@ -10,6 +10,7 @@ import androidx.core.graphics.scale
 import com.example.touchlessdroid.utils.YOLOPostprocessor
 import kotlin.math.min
 import androidx.core.graphics.createBitmap
+import com.example.touchlessdroid.domain.model.Delegate
 import com.example.touchlessdroid.domain.model.camera.DetectedPose
 import com.example.touchlessdroid.domain.model.camera.LetterboxResultV2
 import com.example.touchlessdroid.domain.model.camera.ReverseMapping
@@ -36,7 +37,8 @@ class ObjectDetectionRepository(
         //modelDataSource.loadModel(Constants.MODEL_PATH_26N_POSE_16)
         //modelDataSource.loadModel(Constants.MODEL_PATH_26N_POSE_32)
         //modelDataSource.loadModel(Constants.MODEL_PATH_26N_POSE_INT8)
-        modelDataSource.loadModel(Constants.MODEL_PATH_26N_POSE_INTEGER_QUANT)
+        modelDataSource.loadModel(Constants.MODEL_PATH_26N_POSE_INTEGER_QUANT,Delegate.CPU)
+        //modelDataSource.loadModel(Constants.MODEL_TFLITE_FP32, Delegate.CPU)
         //modelDataSource.loadModel(Constants.MODEL_PATH_26N_POSE_FULL_INTEGER_QUANT)
         val inputTensor = modelDataSource.getInputTensor()
 
