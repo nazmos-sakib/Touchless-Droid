@@ -236,7 +236,7 @@ fun MainApp(modifier: Modifier = Modifier){
                 composable(Screen.Camera.route) {
                     val cameraViewModel: CameraViewModel = hiltViewModel()
                     LaunchedEffect(selectedInferenceConfiguration) {
-                        cameraViewModel.setConfiguration(selectedInferenceConfiguration)
+                        cameraViewModel.startCameraSession(selectedInferenceConfiguration)
                     }
                     CameraScreen(viewModel = cameraViewModel)
                 }

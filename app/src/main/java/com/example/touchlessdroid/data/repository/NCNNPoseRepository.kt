@@ -21,6 +21,8 @@ import com.example.touchlessdroid.domain.model.camera.mapFromModel
 import com.example.touchlessdroid.domain.model.camera.mapToPreview
 import com.example.touchlessdroid.utils.Constants.FLOATS_PER_POSE
 import com.example.touchlessdroid.utils.Constants.NUM_KEYPOINTS
+import com.example.touchlessdroid.utils.DelegateOption
+import com.example.touchlessdroid.utils.PrecisionOption
 import com.example.touchlessdroid.utils.extentions.mapFromModel
 import com.example.touchlessdroid.utils.extentions.mapToPreview
 import kotlin.math.min
@@ -38,7 +40,7 @@ class NCNNPoseRepository (
     // JNI FUNCTIONS
     //----------------------------------------
 
-    private external fun initModelNative(assetManager: AssetManager): Boolean
+    private external fun initModelNative(assetManager: AssetManager,useIntQuant: Boolean,useVulkan: Boolean): Boolean
     private external fun detectNative(bitmap: Bitmap): FloatArray
     private external fun releaseNative()
 
@@ -46,9 +48,10 @@ class NCNNPoseRepository (
 
     override fun initialize(configuration: InferenceConfiguration) {
         if (initialized) return
-        val success = initModelNative(assetManager = context.assets)
+        //val success = initModelNative(assetManager = context.assets, configuration.precision == PrecisionOption.INT8, configuration.delegate == DelegateOption.VULKAN)
+        val success = initModelNative(assetManager = context.assets, useIntQuant = false, useVulkan = false)
         initialized = success
-        Log.d("YOLO", "model loaded = $success")
+        Log.d("NCNN_REPOSITORY", "model loaded = $success")
     }
 
     //----------------------------------------
@@ -68,16 +71,6 @@ class NCNNPoseRepository (
         releaseNative()
         initialized = false
     }
-
-/*    fun debugModel(asm:AssetManager) {
-        val inputStream = asm.open("test_1.jpg")
-        val bitmap = BitmapFactory.decodeStream(inputStream)
-        val poses = detect(resizeBitmapHighQuality(bitmap))
-        Log.d(
-            "POSE_DEBUG",
-            "kotlin poses = ${poses.size}"
-        )
-    }*/
 
     fun letterbox(bitmap: Bitmap, size: Int = 640): LetterboxResult {
         val width = bitmap.width

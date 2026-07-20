@@ -4,7 +4,11 @@ package com.example.touchlessdroid.data.datasource
 import android.content.Context
 import android.util.Log
 import com.example.touchlessdroid.domain.model.Delegate
+import com.example.touchlessdroid.domain.model.InferenceConfiguration
+import com.example.touchlessdroid.utils.Constants
 import com.example.touchlessdroid.utils.Constants.TFModelDebugTag
+import com.example.touchlessdroid.utils.DelegateOption
+import com.example.touchlessdroid.utils.PrecisionOption
 import org.tensorflow.lite.DataType
 import org.tensorflow.lite.Interpreter
 import org.tensorflow.lite.Tensor
@@ -30,22 +34,38 @@ class TFLiteModelDataSource(private val context: Context) {
      * output shape: [1, 300, 57]
      * data type: FLOAT32
      */
-    fun loadModel(modelPath: String,delegate: Delegate): Interpreter {
+    fun loadModel(configuration: InferenceConfiguration): Interpreter {
         // Close existing interpreter if any
         close()
 
-        tflite = when (delegate) {
-            Delegate.CPU -> {
+        val modelPath = when (configuration.precision) {
+            PrecisionOption.FP32 -> {
+                //Constants.MODEL_TFLITE_FP32 //input shape [1, 3, 640, 640] - [1, 300, 57]
+                Constants.MODEL_TFLITE_OLD_float32 //actual FP32 - shape: [1, 640, 640, 3] - [1, 300, 57]
+                //Constants.MODEL_TFLITE_OLD_FP32 //integer_quant
+            }
+            PrecisionOption.INT8 -> {
+                //Constants.MODEL_TFLITE_INT8 //shape: [1, 3, 640, 640] - [1, 56, 8400]
+                Constants.MODEL_TFLITE_OLD_INT8 //full_integer_quant
+            }
+        }
+
+        tflite = when (configuration.delegate) {
+            DelegateOption.CPU -> {
                 createCpuOnlyInterpreter( model = loadModelFile(modelPath))
             }
 
-            Delegate.GPU -> {
+            DelegateOption.GPU -> {
                 createGpuOnlyInterpreter( model = loadModelFile(modelPath))
             }
 
-            Delegate.NNAPI -> {
+            DelegateOption.NNAPI -> {
                 createNNAPIOnlyInterpreter( model = loadModelFile(modelPath))
-                //tflite = createNNAPIExplicitInterpreter( model = loadModelFile(modelPath))
+                //createNNAPIExplicitInterpreter( model = loadModelFile(modelPath))
+            }
+
+            DelegateOption.VULKAN-> {
+                createInterpreter( model = loadModelFile(modelPath))
             }
 
         }
@@ -54,7 +74,7 @@ class TFLiteModelDataSource(private val context: Context) {
 
 
         logTensorInfo("Input",tflite?.getInputTensor(0)!!)
-        logTensorInfo("Output",tflite?.getInputTensor(0)!!)
+        logTensorInfo("Output",tflite?.getOutputTensor(0)!!)
 
         return tflite!!
     }
@@ -173,7 +193,6 @@ class TFLiteModelDataSource(private val context: Context) {
      */
     private fun loadModelFile(modelPath: String): MappedByteBuffer {
         val assetFileDescriptor = context.assets.openFd(modelPath)
-        val assetFileDescriptor2 = context.assets.openFd(modelPath)
         val inputStream = FileInputStream(assetFileDescriptor.fileDescriptor)
         val fileChannel = inputStream.channel
         val startOffset = assetFileDescriptor.startOffset

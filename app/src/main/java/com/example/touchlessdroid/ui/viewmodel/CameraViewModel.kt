@@ -77,19 +77,21 @@ class CameraViewModel @Inject constructor(
     val configuration: StateFlow<InferenceConfiguration> =
         _configuration.asStateFlow()
 
-    private var activeRepository: PoseDetectionRepository? = null
-    private var activeConfiguration: InferenceConfiguration? = null
+    private var repository: PoseDetectionRepository? = null
 
     init {
         observeGestures()
     }
-    fun setConfiguration(configuration: InferenceConfiguration) {
-        if (_configuration.value.runtime != configuration.runtime) {
-            activeRepository?.release()
-            activeRepository = null
-            activeConfiguration = null
-        }
+
+    fun startCameraSession(configuration: InferenceConfiguration) {
+        if (repository != null) return
+
         _configuration.value = configuration
+        viewModelScope.launch(Dispatchers.IO) {
+            repository = poseRepositoryFactory.get(configuration.runtime).also {
+                it.initialize(configuration)
+            }
+        }
     }
 
     private fun observeGestures() {
@@ -133,8 +135,12 @@ class CameraViewModel @Inject constructor(
             try {
                 //val results = repository.detectObjects(bitmap)
                 val currentConfiguration = configuration.value
-                val repository = getActiveRepository(currentConfiguration)
-                val results = repository.detectPose(bitmap,revMapping,currentConfiguration)
+                val activeRepository = repository
+                if (activeRepository == null) {
+                    bitmap.recycle()
+                    return@launch
+                }
+                val results = activeRepository.detectPose(bitmap,revMapping,currentConfiguration)
 
 
                 // take first person only
@@ -251,23 +257,11 @@ class CameraViewModel @Inject constructor(
 
     override fun onCleared() {
         super.onCleared()
-        activeRepository?.release()
-        activeRepository = null
+        repository?.release()
+        repository = null
     }
 
     fun updateDisplayFps(frameCount: Int) {
         _previewViewFps.value = frameCount.toFloat()
-    }
-
-    private fun getActiveRepository(configuration: InferenceConfiguration): PoseDetectionRepository {
-        val repository = activeRepository
-        if (repository != null && activeConfiguration == configuration) return repository
-
-        activeRepository?.release()
-        val nextRepository = poseRepositoryFactory.get(configuration.runtime)
-        nextRepository.initialize(configuration)
-        activeRepository = nextRepository
-        activeConfiguration = configuration
-        return nextRepository
     }
 }

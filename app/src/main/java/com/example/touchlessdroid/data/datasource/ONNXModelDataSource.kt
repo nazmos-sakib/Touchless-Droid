@@ -8,6 +8,8 @@ import ai.onnxruntime.providers.NNAPIFlags
 import android.content.Context
 import android.graphics.Bitmap
 import com.example.touchlessdroid.domain.model.InferenceConfiguration
+import com.example.touchlessdroid.utils.Constants
+import com.example.touchlessdroid.utils.PrecisionOption
 import java.io.FileInputStream
 import java.nio.ByteBuffer
 import java.nio.MappedByteBuffer
@@ -26,7 +28,13 @@ class ONNXModelDataSource(private val context: Context) {
      * data type: FLOAT32
      */
 
-    fun loadModel(modelPath: String) {
+    fun loadModel(configuration: InferenceConfiguration) {
+
+        val modelPath = when (configuration.precision) {
+            PrecisionOption.FP32 -> Constants.MODEL_ONNX_FP32
+            PrecisionOption.INT8 -> Constants.MODEL_ONNX_INT8
+        }
+
         val modelBytes = context.assets.open(modelPath).readBytes()
 
         val opts = OrtSession.SessionOptions().apply {

@@ -21,7 +21,7 @@ enum class DeviceType {
 }
 @SuppressLint("MissingPermission")
 fun android.bluetooth.BluetoothDevice.toBluetoothDeviceLocal(): BluetoothDeviceLocal{
-    Log.d("TAG", "toBluetoothDeviceLocal:  name: $name  type: ${bluetoothClass.deviceClass}")
+    //Log.d("BluetoothDevice", "toBluetoothDeviceLocal:  name: $name  type: ${bluetoothClass.deviceClass}")
     return BluetoothDeviceLocal(
         name = name?.takeIf { it.isNotBlank() } ?: "Unnamed",
         address = address,

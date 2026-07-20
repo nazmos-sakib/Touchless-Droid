@@ -38,8 +38,9 @@ class ONNXPoseDetectionRepository(
 
     override fun initialize(configuration: InferenceConfiguration) {
         if (initialized) return
-        modelDataSource.loadModel(Constants.MODEL_PATH_26N_POSE_MOBILE)
+        modelDataSource.loadModel(configuration)
         initialized = true
+        Log.d("ONNX_REPOSITORY", "model loaded successfully")
     }
 
     /**

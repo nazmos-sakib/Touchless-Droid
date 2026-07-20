@@ -26,7 +26,10 @@ JNIEXPORT jboolean JNICALL
 Java_com_example_touchlessdroid_data_repository_NCNNPoseRepository_initModelNative(
                  JNIEnv *env,
                  jobject /* this */,
-                 jobject assetManagerObj)
+                 jobject assetManagerObj,
+                 jboolean useIntQuant,
+                 jboolean useVulkan
+                 )
 {
     LOGD("initModelNative called");
     if (modelLoaded)
@@ -46,8 +49,11 @@ Java_com_example_touchlessdroid_data_repository_NCNNPoseRepository_initModelNati
     }
 
     //vulkan
-    //ncnn::create_gpu_instance();
-    //yolo.opt.use_vulkan_compute = true;
+    if (useVulkan){
+        ncnn::create_gpu_instance();
+        yolo.opt.use_vulkan_compute = true;
+    }
+    if (useIntQuant){}
     int ret1 = yolo.load_param(assetManager,"model.ncnn.param");
     int ret2 = yolo.load_model(assetManager,"model.ncnn.bin");
 

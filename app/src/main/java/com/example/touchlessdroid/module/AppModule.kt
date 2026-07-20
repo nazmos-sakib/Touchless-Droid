@@ -24,7 +24,6 @@ import jakarta.inject.Singleton
 object AppModule {
 
     @Provides
-    @Singleton
     fun provideTfliteModelDataSource(
         @ApplicationContext context: Context
     ): TFLiteModelDataSource {
@@ -39,7 +38,6 @@ object AppModule {
     }
 
    @Provides
-   @Singleton
    fun provideONNXModelDataSource(
        @ApplicationContext context: Context
    ): ONNXModelDataSource{
@@ -54,7 +52,6 @@ object AppModule {
    }
 
    @Provides
-   @Singleton
    fun providePyTorchModelDataSource(
        @ApplicationContext context: Context
    ): PyTorchModelDataSource{
