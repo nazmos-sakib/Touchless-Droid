@@ -7,6 +7,7 @@ import ai.onnxruntime.OrtSession
 import ai.onnxruntime.providers.NNAPIFlags
 import android.content.Context
 import android.graphics.Bitmap
+import com.example.touchlessdroid.domain.model.InferenceConfiguration
 import java.io.FileInputStream
 import java.nio.ByteBuffer
 import java.nio.MappedByteBuffer
@@ -61,5 +62,9 @@ class ONNXModelDataSource(private val context: Context) {
         return env!!
     }
 
+    fun close() {
+        session?.close()
+        session = null
+    }
 
 }

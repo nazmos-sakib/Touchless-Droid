@@ -24,7 +24,8 @@ import java.nio.ByteOrder
 
 class ONNXPoseDetectionRepository(
     private val modelDataSource: ONNXModelDataSource
-) {
+) : PoseDetectionRepository {
+    private var initialized = false
     private val size = Constants.MODEL_INPUT_SIZE
     private val channelSize = size * size
 
@@ -35,19 +36,17 @@ class ONNXPoseDetectionRepository(
 
     private val pixels = IntArray(size * size)
 
-    init {
+    override fun initialize(configuration: InferenceConfiguration) {
+        if (initialized) return
         modelDataSource.loadModel(Constants.MODEL_PATH_26N_POSE_MOBILE)
+        initialized = true
     }
 
     /**
      * Initialize model
      */
-    fun initialize() {
-         modelDataSource.loadModel(Constants.MODEL_PATH_26N_POSE_MOBILE)
-    }
-
-
-    suspend fun detectPose(bitmap: Bitmap,revMapping: ReverseMapping,infConfig:InferenceConfiguration): List<DetectedPose> {
+    override suspend fun detectPose(bitmap: Bitmap,revMapping: ReverseMapping,infConfig:InferenceConfiguration): List<DetectedPose> {
+        initialize(infConfig)
 
         return try {
             // Preprocess image
@@ -130,6 +129,11 @@ class ONNXPoseDetectionRepository(
         canvas.drawBitmap(resized, padX, padY, null)
 
         return LetterboxResult(output, scale, padX, padY)
+    }
+
+    override fun release() {
+        modelDataSource.close()
+        initialized = false
     }
 
 

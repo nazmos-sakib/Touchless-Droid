@@ -5,6 +5,7 @@ import android.graphics.Canvas
 import android.graphics.Color
 import com.example.touchlessdroid.data.datasource.TFLiteModelDataSource
 import com.example.touchlessdroid.utils.Constants
+import com.example.touchlessdroid.utils.DelegateOption
 import java.nio.ByteBuffer
 import androidx.core.graphics.scale
 import com.example.touchlessdroid.utils.YOLOPostprocessor
@@ -21,12 +22,13 @@ import kotlin.IntArray
 
 class TFLitePoseDetectionRepository(
     private val modelDataSource: TFLiteModelDataSource
-) {
-    private val size: Int
-    val inputBuffer:ByteBuffer
-    private val pixels:IntArray
-    val letterBoxBitmap: Bitmap
-    val canvas: Canvas
+) : PoseDetectionRepository {
+    private var initializedConfiguration: InferenceConfiguration? = null
+    private var size: Int = Constants.MODEL_INPUT_SIZE
+    private lateinit var inputBuffer: ByteBuffer
+    private lateinit var pixels: IntArray
+    private lateinit var letterBoxBitmap: Bitmap
+    private lateinit var canvas: Canvas
 
     val outputBuffer = Array(1) {
         Array(300) {
@@ -34,13 +36,22 @@ class TFLitePoseDetectionRepository(
         }
     }
 
-    init {
-        //modelDataSource.loadModel(Constants.MODEL_PATH_26N_POSE_16)
-        //modelDataSource.loadModel(Constants.MODEL_PATH_26N_POSE_32)
-        //modelDataSource.loadModel(Constants.MODEL_PATH_26N_POSE_INT8)
-        modelDataSource.loadModel(Constants.MODEL_PATH_26N_POSE_INTEGER_QUANT,Delegate.CPU)
-        //modelDataSource.loadModel(Constants.MODEL_TFLITE_FP32, Delegate.CPU)
-        //modelDataSource.loadModel(Constants.MODEL_PATH_26N_POSE_FULL_INTEGER_QUANT)
+    override fun initialize(configuration: InferenceConfiguration) {
+        if (initializedConfiguration == configuration) return
+
+        val modelPath = when (configuration.precision) {
+            com.example.touchlessdroid.utils.PrecisionOption.FP32 -> Constants.MODEL_TFLITE_FP32
+            com.example.touchlessdroid.utils.PrecisionOption.INT8 -> Constants.MODEL_TFLITE_INT8
+        }
+
+        val delegate = when (configuration.delegate) {
+            DelegateOption.CPU -> Delegate.CPU
+            DelegateOption.GPU -> Delegate.GPU
+            DelegateOption.NNAPI -> Delegate.NNAPI
+            DelegateOption.VULKAN -> Delegate.CPU
+        }
+
+        modelDataSource.loadModel(modelPath, delegate)
         val inputTensor = modelDataSource.getInputTensor()
 
         inputBuffer = createBuffer(inputTensor)
@@ -48,20 +59,14 @@ class TFLitePoseDetectionRepository(
         pixels = IntArray(size * size)
         letterBoxBitmap = createBitmap(size, size)
         canvas = Canvas(letterBoxBitmap)
+        initializedConfiguration = configuration
     }
 
     /**
      * Initialize model
      */
-    fun initialize() {
-         //modelDataSource.loadModel(Constants.MODEL_PATH)
-    }
-
-    /**
-     * Detect objects in bitmap
-     */
-
-    suspend fun detectPose(bitmap: Bitmap,revMapping: ReverseMapping,infConfig:InferenceConfiguration): List<DetectedPose> {
+    override suspend fun detectPose(bitmap: Bitmap,revMapping: ReverseMapping,infConfig:InferenceConfiguration): List<DetectedPose> {
+        initialize(infConfig)
 
         bitmap
         return try {
@@ -153,5 +158,10 @@ class TFLitePoseDetectionRepository(
      */
     fun close() {
         modelDataSource.close()
+        initializedConfiguration = null
+    }
+
+    override fun release() {
+        close()
     }
 }

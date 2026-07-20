@@ -27,7 +27,7 @@ import kotlin.math.min
 
 class NCNNPoseRepository (
     private val context: Context
-) {
+) : PoseDetectionRepository {
     companion object {
         init {
             System.loadLibrary("ncnn_yolo26_pose_analyzer")
@@ -42,21 +42,20 @@ class NCNNPoseRepository (
     private external fun detectNative(bitmap: Bitmap): FloatArray
     private external fun releaseNative()
 
-    init {
+    private var initialized = false
+
+    override fun initialize(configuration: InferenceConfiguration) {
+        if (initialized) return
         val success = initModelNative(assetManager = context.assets)
+        initialized = success
         Log.d("YOLO", "model loaded = $success")
     }
 
     //----------------------------------------
     // PUBLIC FUNCTIONS
     //----------------------------------------
-    fun initialize(context: Context) {
-        //this.context = context
-        val success = initModelNative(assetManager = context.assets)
-        Log.d("YOLO", "model loaded = $success")
-    }
-
-    fun detectPose(bitmap: Bitmap, revMapping: ReverseMapping,infConfig:InferenceConfiguration): List<DetectedPose> {
+    override suspend fun detectPose(bitmap: Bitmap, revMapping: ReverseMapping,infConfig:InferenceConfiguration): List<DetectedPose> {
+        initialize(infConfig)
         val letterboxResult = letterbox(bitmap)
 
         val raw = detectNative(letterboxResult.bitmap)
@@ -65,8 +64,9 @@ class NCNNPoseRepository (
     }
 
 
-    fun release() {
+    override fun release() {
         releaseNative()
+        initialized = false
     }
 
 /*    fun debugModel(asm:AssetManager) {

@@ -22,22 +22,20 @@ import kotlin.collections.get
 
 class PyTorchPoseDetectionRepository(
     private val modelDataSource: PyTorchModelDataSource
-) {
+) : PoseDetectionRepository {
+    private var initialized = false
 
-    init {
+    override fun initialize(configuration: InferenceConfiguration) {
+        if (initialized) return
         modelDataSource.loadModel(Constants.MODEL_PATH_26N_POSE_OPTIMIZED)
-        //modelDataSource.loadModel(Constants.MODEL_PATH_26N_POSE)
+        initialized = true
     }
 
     /**
      * Initialize model
      */
-    fun initialize() {
-         //modelDataSource.loadModel(Constants.MODEL_PATH)
-    }
-
-
-    suspend fun detectPose(bitmap: Bitmap,revMapping: ReverseMapping,infConfig:InferenceConfiguration): List<DetectedPose> {
+    override suspend fun detectPose(bitmap: Bitmap,revMapping: ReverseMapping,infConfig:InferenceConfiguration): List<DetectedPose> {
+        initialize(infConfig)
 
         return try {
             val letterBoxResult = letterbox(bitmap)
@@ -105,5 +103,10 @@ class PyTorchPoseDetectionRepository(
      */
     fun close() {
         modelDataSource.close()
+        initialized = false
+    }
+
+    override fun release() {
+        close()
     }
 }

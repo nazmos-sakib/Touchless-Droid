@@ -39,6 +39,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.touchlessdroid.domain.model.Screen
+import com.example.touchlessdroid.domain.model.InferenceConfiguration
 import com.example.touchlessdroid.ui.screens.components.DrawerContent
 import com.example.touchlessdroid.ui.screens.HomeScreen
 import com.example.touchlessdroid.ui.screens.InfoScreen
@@ -50,6 +51,9 @@ import com.example.touchlessdroid.ui.screens.components.camera.CameraScreen
 import com.example.touchlessdroid.ui.theme.TouchlessDroidTheme
 import com.example.touchlessdroid.ui.viewmodel.BluetoothViewModel
 import com.example.touchlessdroid.ui.viewmodel.CameraViewModel
+import com.example.touchlessdroid.utils.DelegateOption
+import com.example.touchlessdroid.utils.PrecisionOption
+import com.example.touchlessdroid.utils.RuntimeOption
 import com.example.yolo26localposeanalyzer.ui.screens.PermissionDeniedScreen
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
@@ -155,7 +159,6 @@ fun MainApp(modifier: Modifier = Modifier){
 
      val context = LocalContext.current
     //val repository = ObjectDetectionRepository(LocalModelDataSource(context))
-    val cameraViewModel: CameraViewModel = hiltViewModel()
 
     // Bluetooth ViewModel
     val bluetoothViewModel: BluetoothViewModel = hiltViewModel()
@@ -168,6 +171,15 @@ fun MainApp(modifier: Modifier = Modifier){
     val scope = rememberCoroutineScope()
     var appDrawerSelectedRoute by remember {
         mutableStateOf(Screen.Home.route)
+    }
+    var selectedInferenceConfiguration by remember {
+        mutableStateOf(
+            InferenceConfiguration(
+                runtime = RuntimeOption.TFLITE,
+                delegate = DelegateOption.CPU,
+                precision = PrecisionOption.FP32
+            )
+        )
     }
     //observe changes in the route
     LaunchedEffect(currentRoute) {
@@ -215,13 +227,17 @@ fun MainApp(modifier: Modifier = Modifier){
                     HomeScreen(
                         bluetoothViewModel = bluetoothViewModel,
                         onStartClick = {configuration ->
-                            cameraViewModel.setConfiguration(configuration)
+                            selectedInferenceConfiguration = configuration
                             navController.navigate(Screen.Camera.route)
                         }
                     )
                 }
 
                 composable(Screen.Camera.route) {
+                    val cameraViewModel: CameraViewModel = hiltViewModel()
+                    LaunchedEffect(selectedInferenceConfiguration) {
+                        cameraViewModel.setConfiguration(selectedInferenceConfiguration)
+                    }
                     CameraScreen(viewModel = cameraViewModel)
                 }
 

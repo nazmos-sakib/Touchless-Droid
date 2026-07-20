@@ -32,7 +32,6 @@ object AppModule {
     }
 
     @Provides
-    @Singleton
     fun provideTFLitePoseDetectionRepository(
         tfliteModelDataSource: TFLiteModelDataSource
     ): TFLitePoseDetectionRepository {
@@ -48,7 +47,6 @@ object AppModule {
    }
 
    @Provides
-   @Singleton
    fun provideONNXPoseDetectionRepository(
        dataSource: ONNXModelDataSource
    ): ONNXPoseDetectionRepository{
@@ -64,7 +62,6 @@ object AppModule {
    }
 
    @Provides
-   @Singleton
    fun providePyTorchPoseDetectionRepository(
        dataSource: PyTorchModelDataSource
    ): PyTorchPoseDetectionRepository{
@@ -72,7 +69,6 @@ object AppModule {
    }
 
    @Provides
-   @Singleton
    fun provideNCNNPoseDetectionRepository(
        @ApplicationContext context: Context
    ): NCNNPoseRepository {

@@ -46,8 +46,8 @@ Java_com_example_touchlessdroid_data_repository_NCNNPoseRepository_initModelNati
     }
 
     //vulkan
-    ncnn::create_gpu_instance();
-    yolo.opt.use_vulkan_compute = true;
+    //ncnn::create_gpu_instance();
+    //yolo.opt.use_vulkan_compute = true;
     int ret1 = yolo.load_param(assetManager,"model.ncnn.param");
     int ret2 = yolo.load_model(assetManager,"model.ncnn.bin");
 

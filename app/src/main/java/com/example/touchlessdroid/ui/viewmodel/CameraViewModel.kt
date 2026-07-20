@@ -10,10 +10,8 @@ import androidx.camera.core.ImageProxy
 import androidx.camera.view.PreviewView
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.touchlessdroid.data.repository.NCNNPoseRepository
-import com.example.touchlessdroid.data.repository.ONNXPoseDetectionRepository
-import com.example.touchlessdroid.data.repository.PyTorchPoseDetectionRepository
-import com.example.touchlessdroid.data.repository.TFLitePoseDetectionRepository
+import com.example.touchlessdroid.data.repository.PoseDetectionRepository
+import com.example.touchlessdroid.data.repository.PoseRepositoryFactory
 import com.example.touchlessdroid.domain.model.InferenceConfiguration
 import com.example.touchlessdroid.domain.model.bluetooth.BlDataTransferStatus
 import com.example.touchlessdroid.domain.model.camera.DetectedPose
@@ -43,10 +41,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class CameraViewModel @Inject constructor(
-    private val tfLiteRepository: TFLitePoseDetectionRepository,
-    private val onnxRepository: ONNXPoseDetectionRepository,
-    private val pyTorchRepository: PyTorchPoseDetectionRepository,
-    private val ncnnRepository: NCNNPoseRepository,
+    private val poseRepositoryFactory: PoseRepositoryFactory,
     private val gestureUseCase: GestureToCommandUseCase,
     private val gestureDetector: GestureDetector
 ) : ViewModel() {
@@ -82,12 +77,18 @@ class CameraViewModel @Inject constructor(
     val configuration: StateFlow<InferenceConfiguration> =
         _configuration.asStateFlow()
 
+    private var activeRepository: PoseDetectionRepository? = null
+    private var activeConfiguration: InferenceConfiguration? = null
+
     init {
-        //initializeModel()
-        tfLiteRepository.initialize()
         observeGestures()
     }
     fun setConfiguration(configuration: InferenceConfiguration) {
+        if (_configuration.value.runtime != configuration.runtime) {
+            activeRepository?.release()
+            activeRepository = null
+            activeConfiguration = null
+        }
         _configuration.value = configuration
     }
 
@@ -131,12 +132,9 @@ class CameraViewModel @Inject constructor(
 
             try {
                 //val results = repository.detectObjects(bitmap)
-                val results = when(configuration.value.runtime){
-                    RuntimeOption.TFLITE -> tfLiteRepository.detectPose(bitmap,revMapping,configuration.value)
-                    RuntimeOption.ONNX -> onnxRepository.detectPose(bitmap,revMapping,configuration.value)
-                    RuntimeOption.PYTORCH -> pyTorchRepository.detectPose(bitmap,revMapping,configuration.value)
-                    RuntimeOption.NCNN -> ncnnRepository.detectPose(bitmap,revMapping,configuration.value)
-                }
+                val currentConfiguration = configuration.value
+                val repository = getActiveRepository(currentConfiguration)
+                val results = repository.detectPose(bitmap,revMapping,currentConfiguration)
 
 
                 // take first person only
@@ -253,9 +251,23 @@ class CameraViewModel @Inject constructor(
 
     override fun onCleared() {
         super.onCleared()
+        activeRepository?.release()
+        activeRepository = null
     }
 
     fun updateDisplayFps(frameCount: Int) {
         _previewViewFps.value = frameCount.toFloat()
+    }
+
+    private fun getActiveRepository(configuration: InferenceConfiguration): PoseDetectionRepository {
+        val repository = activeRepository
+        if (repository != null && activeConfiguration == configuration) return repository
+
+        activeRepository?.release()
+        val nextRepository = poseRepositoryFactory.get(configuration.runtime)
+        nextRepository.initialize(configuration)
+        activeRepository = nextRepository
+        activeConfiguration = configuration
+        return nextRepository
     }
 }
