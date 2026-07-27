@@ -34,7 +34,7 @@ enum class RuntimeOption(
         label = "ONNX Runtime",
         supportedDelegates = listOf(
             DelegateOption.CPU,
-            DelegateOption.GPU,
+            //DelegateOption.GPU,
             DelegateOption.NNAPI
         ),
         supportedPrecisions = listOf(

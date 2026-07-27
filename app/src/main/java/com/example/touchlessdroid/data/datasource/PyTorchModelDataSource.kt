@@ -2,7 +2,10 @@ package com.example.touchlessdroid.data.datasource
 
 import android.content.Context
 import android.util.Log
+import com.example.touchlessdroid.domain.model.InferenceConfiguration
+import com.example.touchlessdroid.utils.Constants
 import com.example.touchlessdroid.utils.Constants.TFModelDebugTag
+import com.example.touchlessdroid.utils.DelegateOption
 import org.pytorch.Device
 import org.pytorch.IValue
 import org.pytorch.LiteModuleLoader
@@ -28,18 +31,30 @@ class PyTorchModelDataSource(private val context: Context) {
      * output shape: [1, 300, 57]
      * data type: FLOAT32
      */
-    fun loadModel(assetName: String): Module {
+    fun loadModel(configuration: InferenceConfiguration): Module {
         // Close existing interpreter if any
         close()
 
         //module = Module.load(loadModelFile(assetName)) //heavy
-        module = LiteModuleLoader.load(loadModelFile(assetName)) //lite
-        // Move to Vulkan (GPU)
-        module to Device.VULKAN
-
-        //logTensorInfo("Input",module?.getInputTensor(0)!!)
-        //logTensorInfo("Output",module? .getInputTensor(0)!!)
-
+        val device = when (configuration.delegate) {
+            DelegateOption.CPU -> Device.CPU
+            DelegateOption.GPU -> Device.VULKAN
+            else -> {
+                throw IllegalArgumentException(
+                    "NNAPI is not supported by PyTorch Mobile LiteModuleLoader"
+                )
+            }
+        }
+        module = LiteModuleLoader.load(
+            loadModelFile(
+                //Constants.MODEL_PYTORCH_F32_OPTIMIZED,
+                Constants.MODEL_PYTORCH_F32_CPU,
+            ),
+            emptyMap(),
+            device
+        ) //lite
+        Log.d(Constants.PyTorchModelDebugTag, "loadModel: using $device")
+        Log.d(Constants.PyTorchModelDebugTag, "loadModel: Model Loaded")
         return module!!
     }
 

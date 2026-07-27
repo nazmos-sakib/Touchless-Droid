@@ -3,7 +3,6 @@ package com.example.touchlessdroid.data.datasource
 
 import android.content.Context
 import android.util.Log
-import com.example.touchlessdroid.domain.model.Delegate
 import com.example.touchlessdroid.domain.model.InferenceConfiguration
 import com.example.touchlessdroid.utils.Constants
 import com.example.touchlessdroid.utils.Constants.TFModelDebugTag
@@ -41,7 +40,7 @@ class TFLiteModelDataSource(private val context: Context) {
         val modelPath = when (configuration.precision) {
             PrecisionOption.FP32 -> {
                 //Constants.MODEL_TFLITE_FP32 //input shape [1, 3, 640, 640] - [1, 300, 57]
-                Constants.MODEL_TFLITE_OLD_float32 //actual FP32 - shape: [1, 640, 640, 3] - [1, 300, 57]
+                Constants.MODEL_TFLITE_OLD_FLOAT32 //actual FP32 - shape: [1, 640, 640, 3] - [1, 300, 57]
                 //Constants.MODEL_TFLITE_OLD_FP32 //integer_quant
             }
             PrecisionOption.INT8 -> {
@@ -87,6 +86,7 @@ class TFLiteModelDataSource(private val context: Context) {
             val gpuDelegate = GpuDelegate(compatList.bestOptionsForThisDevice)
             options.addDelegate(gpuDelegate)
             delegate = "GPU"
+            Log.d(TFModelDebugTag, "Using GPU")
             return Interpreter(model, options)
 
         } catch (e: Exception) {

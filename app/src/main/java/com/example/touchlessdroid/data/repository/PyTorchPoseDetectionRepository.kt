@@ -27,7 +27,7 @@ class PyTorchPoseDetectionRepository(
 
     override fun initialize(configuration: InferenceConfiguration) {
         if (initialized) return
-        modelDataSource.loadModel(Constants.MODEL_PATH_26N_POSE_OPTIMIZED)
+        modelDataSource.loadModel(configuration)
         initialized = true
     }
 

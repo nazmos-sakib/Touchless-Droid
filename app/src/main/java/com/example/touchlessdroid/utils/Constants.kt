@@ -1,20 +1,19 @@
 package com.example.touchlessdroid.utils
 
 object Constants {
-    const val MODEL_TFLITE_OLD_float32 = "yolo26n-pose_float32.tflite"
+    const val MODEL_TFLITE_OLD_FLOAT32 = "yolo26n-pose_float32.tflite"
     const val MODEL_TFLITE_OLD_INT8 = "yolo26n-pose_full_integer_quant.tflite"
     const val MODEL_TFLITE_OLD_FP32 = "yolo26n-pose_integer_quant.tflite"
-    const val MODEL_TFLITE_FP32 = "yolo26n_pose_fp32.tflite"
-    const val MODEL_TFLITE_INT8 = "yolo26n_pose_int8.tflite"
-    const val MODEL_ONNX_FP32 = "yolo26n_pose_fp32.onnx"
-    const val MODEL_ONNX_INT8 = "yolo26n_pose_int8.onnx"
 
     //ONNX
     const val MODEL_PATH_26N_POSE_MOBILE = "yolo26n-pose-mobile.onnx"
+    const val MODEL_ONNX_FP32 = "yolo26n_pose_fp32.onnx"
+    const val MODEL_ONNX_INT8 = "yolo26n_pose_int8.onnx"
 
     //PyTorch
-    const val MODEL_PATH_26N_POSE = "yolo26n-pose.pt"
-    const val MODEL_PATH_26N_POSE_OPTIMIZED = "yolo26n-pose-saved-for-lite-interpreter.pt"
+    const val MODEL_PYTORCH_F32_ORIGINAL = "yolo26n-pose.pt"
+    const val MODEL_PYTORCH_F32_OPTIMIZED = "yolo26n-pose-saved-for-lite-interpreter.pt"
+    const val MODEL_PYTORCH_F32_CPU = "yolo26n_pytorch_cpu_fp32.ptl"
 
 
     // YOLOv8 input size
@@ -44,6 +43,8 @@ object Constants {
     const val PerformanceDebugTag = "PERFORMANCE_DEBUG_TAG"
     const val ImageDebugTag = "IMAGE_DEBUG_TAG"
     const val TFModelDebugTag = "TF_MODEL_DEBUG_TAG"
+    const val ONNXModelDebugTag = "ONNX_MODEL_DEBUG_TAG"
+    const val PyTorchModelDebugTag = "PyTORCH_MODEL_DEBUG_TAG"
     const val BASE_URL = "http://192.168.2.119:5000"
     const val NetworkDebugTag = "NETWORK_DEBUG_TAG"
     const val CrashDebugTag = "CRASH_DEBUG_TAG"

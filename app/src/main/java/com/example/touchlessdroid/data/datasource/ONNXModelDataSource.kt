@@ -4,16 +4,17 @@ package com.example.touchlessdroid.data.datasource
 import ai.onnxruntime.OnnxTensor
 import ai.onnxruntime.OrtEnvironment
 import ai.onnxruntime.OrtSession
+import ai.onnxruntime.TensorInfo
 import ai.onnxruntime.providers.NNAPIFlags
 import android.content.Context
-import android.graphics.Bitmap
+import android.util.Log
 import com.example.touchlessdroid.domain.model.InferenceConfiguration
 import com.example.touchlessdroid.utils.Constants
+import com.example.touchlessdroid.utils.Constants.ONNXModelDebugTag
+import com.example.touchlessdroid.utils.Constants.TFModelDebugTag
+import com.example.touchlessdroid.utils.DelegateOption
 import com.example.touchlessdroid.utils.PrecisionOption
-import java.io.FileInputStream
-import java.nio.ByteBuffer
-import java.nio.MappedByteBuffer
-import java.nio.channels.FileChannel
+import java.util.Arrays
 import java.util.EnumSet
 
 class ONNXModelDataSource(private val context: Context) {
@@ -37,20 +38,23 @@ class ONNXModelDataSource(private val context: Context) {
 
         val modelBytes = context.assets.open(modelPath).readBytes()
 
-        val opts = OrtSession.SessionOptions().apply {
-            setOptimizationLevel(OrtSession.SessionOptions.OptLevel.ALL_OPT)
-        }
-
-        //NNAPI
-        val options = OrtSession.SessionOptions().apply {
-            addNnapi(
-                EnumSet.of(
-                    NNAPIFlags.USE_FP16,
-                    NNAPIFlags.CPU_DISABLED
+        val options = when (configuration.delegate) {
+            DelegateOption.NNAPI -> OrtSession.SessionOptions().apply {
+                addNnapi(
+                    EnumSet.of(
+                        NNAPIFlags.USE_FP16,
+                        NNAPIFlags.CPU_DISABLED
+                    )
                 )
-            )
+            }
+
+            //all default falls into CPU
+            else -> OrtSession.SessionOptions().apply {
+                setOptimizationLevel(OrtSession.SessionOptions.OptLevel.ALL_OPT)
+            }
         }
-        session = env.createSession(modelBytes, opts)
+        session = env.createSession(modelBytes, options)
+        logModelInfo()
     }
 
 
@@ -67,7 +71,42 @@ class ONNXModelDataSource(private val context: Context) {
     }
 
     fun getEnv(): OrtEnvironment {
-        return env!!
+        return env
+    }
+
+    private fun logModelInfo() {
+        session?.inputInfo?.forEach { (_, nodeInfo) ->
+            logTensorInfo("Input", nodeInfo.info)
+        }
+
+        session?.outputInfo?.forEach { (_, nodeInfo) ->
+            logTensorInfo("Output", nodeInfo.info)
+        }
+    }
+
+    private fun logTensorInfo(name: String, valueInfo: ai.onnxruntime.ValueInfo) {
+        Log.d(ONNXModelDebugTag, "=== $name INFO ===")
+
+        if (valueInfo !is TensorInfo) {
+            Log.d(ONNXModelDebugTag, "logTensorInfo: non-tensor ONNX value: $valueInfo")
+            return
+        }
+
+        val shape = valueInfo.shape
+        val dataCapacity = calculateDataCapacity(valueInfo)
+
+        Log.d(ONNXModelDebugTag, "logTensorInfo: shape: ${Arrays.toString(shape)}")
+        Log.d(ONNXModelDebugTag, "logTensorInfo: data type: ${valueInfo.onnxType}")
+        Log.d(ONNXModelDebugTag, "logTensorInfo: data capacity: $dataCapacity")
+        Log.d(ONNXModelDebugTag, "logTensorInfo: Quantization Scale: Not exposed by ONNX Runtime TensorInfo")
+        Log.d(ONNXModelDebugTag, "logTensorInfo: Quantization zero Point: Not exposed by ONNX Runtime TensorInfo")
+    }
+
+    private fun calculateDataCapacity(tensorInfo: TensorInfo): String {
+        val numElements = tensorInfo.numElements
+        if (numElements < 0) return "Unknown because shape contains dynamic dimensions"
+
+        return "${numElements * tensorInfo.type.size} bytes"
     }
 
     fun close() {
