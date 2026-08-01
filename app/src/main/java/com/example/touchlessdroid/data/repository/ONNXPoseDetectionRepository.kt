@@ -5,6 +5,8 @@ package com.example.touchlessdroid.data.repository
 import ai.onnxruntime.OnnxTensor
 import ai.onnxruntime.OrtEnvironment
 import android.graphics.Bitmap
+import android.os.SystemClock
+import com.example.touchlessdroid.benchmark.FrameTiming
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.RectF
@@ -46,25 +48,29 @@ class ONNXPoseDetectionRepository(
     /**
      * Initialize model
      */
-    override suspend fun detectPose(bitmap: Bitmap,revMapping: ReverseMapping,infConfig:InferenceConfiguration): List<DetectedPose> {
-        initialize(infConfig)
-
+    override suspend fun detectPose(bitmap: Bitmap,revMapping: ReverseMapping,infConfig:InferenceConfiguration, timing: FrameTiming): List<DetectedPose> {
+        check(initialized) { "ONNX repository has not been initialized" }
         return try {
             // Preprocess image
             val result = prepareInput(bitmap, modelDataSource.getEnv(), Constants.MODEL_INPUT_SIZE)
-
             val inputBuffer = result.first
-
-            // Run inference
-            val outputs = modelDataSource.run(inputBuffer)
-
-            //return statement
-            // Postprocess results
-            YOLOPostprocessor.parseOutputShape300x57(
-                outputs,
-                result.second,
-                revMapping
-            )
+            try {
+                timing.modelInputReadyNs = SystemClock.elapsedRealtimeNanos()
+                val outputs = modelDataSource.run(inputBuffer).use { rawOutputs ->
+                    timing.inferenceCompletedNs = SystemClock.elapsedRealtimeNanos()
+                    @Suppress("UNCHECKED_CAST")
+                    val outputTensor = rawOutputs[0].value as Array<Array<FloatArray>>
+                    outputTensor[0]
+                }
+                YOLOPostprocessor.parseOutputShape300x57(
+                    outputs,
+                    result.second,
+                    revMapping
+                ).also { timing.postprocessingCompletedNs = SystemClock.elapsedRealtimeNanos() }
+            } finally {
+                inputBuffer.close()
+                result.second.bitmap.recycle()
+            }
 
         } catch (e: Exception) {
             e.printStackTrace()
@@ -128,6 +134,7 @@ class ONNXPoseDetectionRepository(
 
         canvas.drawColor(Color.BLACK)
         canvas.drawBitmap(resized, padX, padY, null)
+        resized.recycle()
 
         return LetterboxResult(output, scale, padX, padY)
     }

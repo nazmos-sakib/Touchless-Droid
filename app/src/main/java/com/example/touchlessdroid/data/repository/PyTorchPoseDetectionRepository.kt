@@ -1,6 +1,8 @@
 package com.example.touchlessdroid.data.repository
 
 import android.graphics.Bitmap
+import android.os.SystemClock
+import com.example.touchlessdroid.benchmark.FrameTiming
 import android.graphics.Canvas
 import android.graphics.Color
 import android.util.Log
@@ -34,23 +36,25 @@ class PyTorchPoseDetectionRepository(
     /**
      * Initialize model
      */
-    override suspend fun detectPose(bitmap: Bitmap,revMapping: ReverseMapping,infConfig:InferenceConfiguration): List<DetectedPose> {
-        initialize(infConfig)
-
+    override suspend fun detectPose(bitmap: Bitmap,revMapping: ReverseMapping,infConfig:InferenceConfiguration, timing: FrameTiming): List<DetectedPose> {
+        check(initialized) { "PyTorch repository has not been initialized" }
         return try {
             val letterBoxResult = letterbox(bitmap)
-
-            val inputTensor = letterBoxResult.bitmap.bitmapToTensor()
-
-            val output = modelDataSource.runInference(inputTensor)
-            val shape = output.shape() // [1, 300, 57]
-            val reshaped = reshapeTo2D(output.dataAsFloatArray, shape[1].toInt(), shape[2].toInt())
-
-            return YOLOPostprocessor.parseOutputShape300x57(
-                reshaped,
-                letterBoxResult,
-                revMapping
-            )
+            try {
+                val inputTensor = letterBoxResult.bitmap.bitmapToTensor()
+                timing.modelInputReadyNs = SystemClock.elapsedRealtimeNanos()
+                val output = modelDataSource.runInference(inputTensor)
+                timing.inferenceCompletedNs = SystemClock.elapsedRealtimeNanos()
+                val shape = output.shape() // [1, 300, 57]
+                val reshaped = reshapeTo2D(output.dataAsFloatArray, shape[1].toInt(), shape[2].toInt())
+                return YOLOPostprocessor.parseOutputShape300x57(
+                    reshaped,
+                    letterBoxResult,
+                    revMapping
+                ).also { timing.postprocessingCompletedNs = SystemClock.elapsedRealtimeNanos() }
+            } finally {
+                letterBoxResult.bitmap.recycle()
+            }
         }  catch (e: Exception) {
             e.printStackTrace()
             emptyList()
@@ -91,6 +95,7 @@ class PyTorchPoseDetectionRepository(
 
         canvas.drawColor(Color.BLACK)
         canvas.drawBitmap(resized, padX, padY, null)
+        resized.recycle()
 
         return LetterboxResult(output, scale, padX, padY)
     }

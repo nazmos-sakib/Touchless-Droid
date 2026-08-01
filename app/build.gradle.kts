@@ -11,7 +11,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.touchlessdroid"
-        minSdk = 24
+        minSdk = 29
         //noinspection OldTargetApi
         targetSdk = 37
         versionCode = 1

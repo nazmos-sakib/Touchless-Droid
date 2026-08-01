@@ -59,15 +59,11 @@ class ONNXModelDataSource(private val context: Context) {
 
 
 
-    fun run(inputTensor: OnnxTensor): Array<FloatArray> {
+    fun run(inputTensor: OnnxTensor): OrtSession.Result {
         val inputs = mapOf(
             "images" to inputTensor   // ⚠️ confirm input name using Netron
         )
-
-        val outputs = session?.run(inputs)!!
-
-        val outputTensor  = outputs[0].value as Array<Array<FloatArray>>
-        return outputTensor[0]
+        return session?.run(inputs)!!
     }
 
     fun getEnv(): OrtEnvironment {

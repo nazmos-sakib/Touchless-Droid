@@ -1,3 +1,11 @@
+adb shell "echo Manufacturer: $(getprop ro.product.manufacturer); \
+echo Model: $(getprop ro.product.model); \
+echo Android_Version: $(getprop ro.build.version.release); \
+echo SDK: $(getprop ro.build.version.sdk); \
+echo Hardware: $(getprop ro.hardware); \
+echo SoC_Manufacturer: $(getprop ro.soc.manufacturer); \
+echo SoC_Model: $(getprop ro.soc.model)" > device_pixel_info.txt
+
 Manufacturer: Nothing
 Model: A015
 Android Version: 16

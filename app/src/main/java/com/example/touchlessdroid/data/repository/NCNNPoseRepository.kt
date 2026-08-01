@@ -8,6 +8,8 @@ import android.graphics.Rect
 import android.util.Log
  import androidx.core.graphics.createBitmap
 import android.graphics.Bitmap
+import android.os.SystemClock
+import com.example.touchlessdroid.benchmark.FrameTiming
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.RectF
@@ -41,15 +43,18 @@ class NCNNPoseRepository (
     //----------------------------------------
 
     private external fun initModelNative(assetManager: AssetManager,useIntQuant: Boolean,useVulkan: Boolean): Boolean
-    private external fun detectNative(bitmap: Bitmap): FloatArray
+    private external fun detectNative(bitmap: Bitmap, inferenceTimestampsNs: LongArray): FloatArray
     private external fun releaseNative()
 
     private var initialized = false
 
     override fun initialize(configuration: InferenceConfiguration) {
         if (initialized) return
-        //val success = initModelNative(assetManager = context.assets, configuration.precision == PrecisionOption.INT8, configuration.delegate == DelegateOption.VULKAN)
-        val success = initModelNative(assetManager = context.assets, useIntQuant = false, useVulkan = false)
+        val success = initModelNative(
+            assetManager = context.assets,
+            useIntQuant = configuration.precision == PrecisionOption.INT8,
+            useVulkan = configuration.delegate == DelegateOption.VULKAN
+        )
         initialized = success
         Log.d("NCNN_REPOSITORY", "model loaded = $success")
     }
@@ -57,13 +62,24 @@ class NCNNPoseRepository (
     //----------------------------------------
     // PUBLIC FUNCTIONS
     //----------------------------------------
-    override suspend fun detectPose(bitmap: Bitmap, revMapping: ReverseMapping,infConfig:InferenceConfiguration): List<DetectedPose> {
-        initialize(infConfig)
-        val letterboxResult = letterbox(bitmap)
-
-        val raw = detectNative(letterboxResult.bitmap)
-
-        return convertToPoses(raw,letterboxResult,revMapping)
+    override suspend fun detectPose(bitmap: Bitmap, revMapping: ReverseMapping,infConfig:InferenceConfiguration, timing: FrameTiming): List<DetectedPose> {
+        check(initialized) { "NCNN repository has not been initialized" }
+        return try {
+            val letterboxResult = letterbox(bitmap)
+            try {
+                val nativeTimestamps = LongArray(2)
+                val raw = detectNative(letterboxResult.bitmap, nativeTimestamps)
+                timing.modelInputReadyNs = nativeTimestamps[0]
+                timing.inferenceCompletedNs = nativeTimestamps[1]
+                convertToPoses(raw,letterboxResult,revMapping).also {
+                    timing.postprocessingCompletedNs = SystemClock.elapsedRealtimeNanos()
+                }
+            } finally {
+                letterboxResult.bitmap.recycle()
+            }
+        } finally {
+            bitmap.recycle()
+        }
     }
 
 
@@ -99,6 +115,7 @@ class NCNNPoseRepository (
             Color.rgb(114, 114, 114)
         )
         canvas.drawBitmap(resized, padX, padY, paint)
+        resized.recycle()
 
         return LetterboxResult( letterBoxBitmap,scale, padX, padY)
     }
@@ -141,10 +158,6 @@ class NCNNPoseRepository (
             val y1 = data[index++]
             val x2 = data[index++]
             val y2 = data[index++]
-            Log.d(
-                "POSE_DEBUG",
-                "bbox = $x1 $y1 $x2 $y2"
-            )
             val score = data[index++]
 
             val keypoints = mutableListOf<Keypoint>()

@@ -1,6 +1,8 @@
 package com.example.touchlessdroid.data.repository
 
 import android.graphics.Bitmap
+import android.os.SystemClock
+import com.example.touchlessdroid.benchmark.FrameTiming
 import android.graphics.Canvas
 import android.graphics.Color
 import android.util.Log
@@ -56,16 +58,17 @@ class TFLitePoseDetectionRepository(
     /**
      * Initialize model
      */
-    override suspend fun detectPose(bitmap: Bitmap,revMapping: ReverseMapping,infConfig:InferenceConfiguration): List<DetectedPose> {
-        initialize(infConfig)
-
-        bitmap
+    override suspend fun detectPose(bitmap: Bitmap,revMapping: ReverseMapping,infConfig:InferenceConfiguration, timing: FrameTiming): List<DetectedPose> {
+        check(initializedConfiguration == infConfig) { "TFLite repository was not initialized for this configuration" }
         return try {
             // Preprocess image
             val v2LetterBoxResult = prepareInput(bitmap)
+            timing.modelInputReadyNs = SystemClock.elapsedRealtimeNanos()
 
             // Run inference
-            val outputForPostprocess = runInference()
+            executeInference()
+            timing.inferenceCompletedNs = SystemClock.elapsedRealtimeNanos()
+            val outputForPostprocess = outputForPostprocess()
 
             //return statement
             // Postprocess results
@@ -73,13 +76,11 @@ class TFLitePoseDetectionRepository(
                 outputForPostprocess,
                 v2LetterBoxResult,
                 revMapping
-            )
+            ).also { timing.postprocessingCompletedNs = SystemClock.elapsedRealtimeNanos() }
         } catch (e: Exception) {
             e.printStackTrace()
             emptyList()
-        } finally {
-            bitmap.recycle()
-        }
+        } finally { bitmap.recycle() }
     }
 
 
@@ -122,18 +123,18 @@ class TFLitePoseDetectionRepository(
         return result
     }
 
-    private fun runInference(): Array<Array<FloatArray>> {
+    private fun executeInference() {
+        when (outputTensor.dataType()) {
+            DataType.FLOAT32 -> modelDataSource.runInference(inputBuffer, floatOutputBuffer)
+            DataType.INT8 -> modelDataSource.runInference(inputBuffer, int8OutputBuffer)
+            else -> error("Unsupported TFLite output type: ${outputTensor.dataType()}")
+        }
+    }
+
+    private fun outputForPostprocess(): Array<Array<FloatArray>> {
         return when (outputTensor.dataType()) {
-            DataType.FLOAT32 -> {
-                modelDataSource.runInference(inputBuffer, floatOutputBuffer)
-                floatOutputBuffer
-            }
-
-            DataType.INT8 -> {
-                modelDataSource.runInference(inputBuffer, int8OutputBuffer)
-                dequantizeInt8Output(int8OutputBuffer, outputTensor)
-            }
-
+            DataType.FLOAT32 -> floatOutputBuffer
+            DataType.INT8 -> dequantizeInt8Output(int8OutputBuffer, outputTensor)
             else -> error("Unsupported TFLite output type: ${outputTensor.dataType()}")
         }
     }
@@ -202,6 +203,7 @@ class TFLitePoseDetectionRepository(
 
         canvas.drawColor(Color.BLACK)
         canvas.drawBitmap(resized, padX, padY, null)
+        resized.recycle()
 
         return LetterboxResultV2( size,scale, padX, padY)
     }
@@ -219,6 +221,9 @@ class TFLitePoseDetectionRepository(
     }
 
     override fun release() {
+        if (::letterBoxBitmap.isInitialized && !letterBoxBitmap.isRecycled) {
+            letterBoxBitmap.recycle()
+        }
         close()
     }
 }

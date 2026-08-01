@@ -8,8 +8,10 @@ import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothSocket
 import android.content.Context
 import android.content.IntentFilter
+import android.os.SystemClock
 import androidx.annotation.RequiresPermission
 import com.example.touchlessdroid.data.repository.BluetoothDataTransfer
+import com.example.touchlessdroid.benchmark.FrameTiming
 import com.example.touchlessdroid.data.repository.broadcast_receiver.BluetoothConnectionStateReceiver
 import com.example.touchlessdroid.data.repository.broadcast_receiver.FoundDeviceReceiver
 import com.example.touchlessdroid.domain.model.bluetooth.BlDataTransferStatus
@@ -153,13 +155,15 @@ class BluetoothManager(private val context: Context):
         outputStream?.write((command + "\n").toByteArray())
     }
 
-    override suspend fun sendCommand(command: RobotCommand): BlDataTransferStatus {
+    override suspend fun sendCommand(command: RobotCommand, timing: FrameTiming?): BlDataTransferStatus {
         return try {
             val stream = outputStream
                 ?: return BlDataTransferStatus.NotConnected
 
             withContext(Dispatchers.IO) {
+                timing?.bluetoothWriteStartedNs = SystemClock.elapsedRealtimeNanos()
                 stream.write((command.name + "\n").toByteArray())
+                timing?.bluetoothWriteCompletedNs = SystemClock.elapsedRealtimeNanos()
             }
 
             BlDataTransferStatus.Success

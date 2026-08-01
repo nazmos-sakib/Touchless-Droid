@@ -3,6 +3,7 @@
 #include <android/log.h>
 #include <android/asset_manager_jni.h>
 #include <android/bitmap.h>
+#include <time.h>
 
 #include "net.h"
 #include "pose_decoder.h"
@@ -19,6 +20,13 @@
 static ncnn::Net yolo;
 static bool modelLoaded = false;
 static std::string currentDelegate = "CPU";
+
+static int64_t elapsedRealtimeNanos()
+{
+    timespec now{};
+    clock_gettime(CLOCK_BOOTTIME, &now);
+    return static_cast<int64_t>(now.tv_sec) * 1000000000LL + now.tv_nsec;
+}
 
 //---------------------------Init model Native---
 extern "C"
@@ -82,10 +90,9 @@ JNIEXPORT jfloatArray JNICALL
 Java_com_example_touchlessdroid_data_repository_NCNNPoseRepository_detectNative(
         JNIEnv *env,
         jobject thiz,
-        jobject bitmap)
+        jobject bitmap,
+        jlongArray inferenceTimestampsNs)
 {
-    LOGD("detect called");
-
     //------------------------------------
     // Get bitmap information
     //------------------------------------
@@ -120,9 +127,6 @@ Java_com_example_touchlessdroid_data_repository_NCNNPoseRepository_detectNative(
             bitmapInfo.width,
             bitmapInfo.height
     );
-    LOGD("input w = %d", input.w);
-    LOGD("input h = %d", input.h);
-    LOGD("input c = %d", input.c);
 
     //------------------------------------
     // Release bitmap
@@ -158,18 +162,19 @@ Java_com_example_touchlessdroid_data_repository_NCNNPoseRepository_detectNative(
 
     ncnn::Mat out;
 
+    const jlong modelInputReadyNs = elapsedRealtimeNanos();
     ex.extract("out0", out);
+    const jlong inferenceCompletedNs = elapsedRealtimeNanos();
+    const jlong timestamps[] = {modelInputReadyNs, inferenceCompletedNs};
+    env->SetLongArrayRegion(inferenceTimestampsNs, 0, 2, timestamps);
+
     std::vector<PoseObject> poses =
             decodePoses(out, 0.25f);
-
-    LOGD("before NMS, poses found = %zu", poses.size());
 
     std::vector<PoseObject> finalPoses =
             performNms(
                     poses,
                     0.45f);
-
-    LOGD("after NMS, poses found = %zu", finalPoses.size());
 
     //------------------------------------
     // Flatten poses into float vector
@@ -242,4 +247,3 @@ Java_com_example_touchlessdroid_MainActivity_logGpuInfo(
         LOGI("No Vulkan GPU detected");
     }
 }
-

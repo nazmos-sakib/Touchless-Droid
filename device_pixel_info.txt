@@ -1,0 +1,7 @@
+Manufacturer: Google
+Model: Pixel 6a
+Android Version: 17
+SDK: 37
+Hardware: bluejay
+SoC Manufacturer: Google
+SoC Model: Tensor

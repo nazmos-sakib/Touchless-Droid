@@ -132,7 +132,7 @@ class TFLiteModelDataSource(private val context: Context) {
         val options = Interpreter.Options().apply {
             setNumThreads(numThreads)
             //setNumThreads(4)
-            setUseXNNPACK(false)
+            setUseXNNPACK(true)
         }
 
         Log.d(TFModelDebugTag, "⚠️ Using CPU with $numThreads threads")

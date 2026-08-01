@@ -7,18 +7,11 @@ std::vector<PoseObject> decodePoses(
     std::vector<PoseObject> poses;
 
     const int numPredictions = output.w; // 8400
-    float maxScore = 0.f;
     for (int i = 0; i < numPredictions; i++)
     {
 
 
         float score = output.row(4)[i];
-        if (score > maxScore)
-        {
-            maxScore = score;
-        }
-
-
         if (score < confidenceThreshold)
         {
             continue;
@@ -59,13 +52,6 @@ std::vector<PoseObject> decodePoses(
 
         poses.push_back(pose);
     }
-
-    __android_log_print(
-            ANDROID_LOG_DEBUG,
-            "POSE_DEBUG",
-            "max score = %f",
-            maxScore
-    );
 
     return poses;
 }

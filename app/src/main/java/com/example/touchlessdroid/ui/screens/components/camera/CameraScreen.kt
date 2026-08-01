@@ -2,7 +2,6 @@ package com.example.touchlessdroid.ui.screens.components.camera
 
 import android.graphics.Paint
 import android.graphics.RectF
-import android.util.Log
 import androidx.camera.core.AspectRatio
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
@@ -19,6 +18,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.*
@@ -63,6 +63,7 @@ fun CameraScreen(viewModel: CameraViewModel) {
     val inferenceFps by viewModel.inferenceFps.collectAsStateWithLifecycle()
     val cmd by viewModel.command.collectAsStateWithLifecycle()
     val configuration by viewModel.configuration.collectAsStateWithLifecycle()
+    val benchmark by viewModel.benchmarkUiState.collectAsStateWithLifecycle()
 
     var previewViewSize: Size by remember { mutableStateOf(Size(0f,0f)) }
     var imageProxySize: Size by remember { mutableStateOf(Size(0f,0f)) }
@@ -137,37 +138,28 @@ fun CameraScreen(viewModel: CameraViewModel) {
                 }
                 //end bounding box pre calculation =========================
 
-                //skip imageProxy if its already in process
-                if (!viewModel.isProcessing.value) {
-
-                    val now = System.currentTimeMillis()
-
-                    //viewModel.debugInfo(_imgProxy,_previewView)
-                    //val jpegBytes = _imgProxy.yuvToJpegByte(quality = 70)
-                    val rotatedBitMap =
-                        _imgProxy.rgbToBitmap()
-                            .rotateBitmap(_imgProxy.imageInfo.rotationDegrees, cameraSelector)
-                    Log.d(
-                        PerformanceDebugTag,
-                        "CameraScreen: Time to prepare image: ${System.currentTimeMillis() - now}"
+                val timing = viewModel.tryAcquireFrame() ?: return@CameraPreview
+                var sourceBitmap: android.graphics.Bitmap? = null
+                var rotatedBitmap: android.graphics.Bitmap? = null
+                try {
+                    sourceBitmap = _imgProxy.rgbToBitmap()
+                    rotatedBitmap = sourceBitmap.rotateBitmap(
+                        _imgProxy.imageInfo.rotationDegrees,
+                        cameraSelector
                     )
-
+                    if (rotatedBitmap !== sourceBitmap) sourceBitmap.recycle()
+                    sourceBitmap = null
+                    viewModel.markBitmapReady(timing)
                     viewModel.processFrame(
-                        rotatedBitMap,
-                        Utility.getReverseMapping(previewViewSize, imageProxySize)
+                        rotatedBitmap,
+                        Utility.getReverseMapping(previewViewSize, imageProxySize),
+                        timing
                     )
-                    //save image in local memory
-                    /*scope.launch(Dispatchers.IO) {
-                        //if (viewModel.isProcessing.value) return@launch
-                        //viewModel.saveImageProxy(context,jpegBytes,_imgProxy.imageInfo.rotationDegrees.toFloat())
-                        viewModel.saveImageProxy(context,rotatedBitMap)
-                    }*/
-
-                    //viewModel.viewModelFPSRateLimit()
-                    //Log.d(PerformanceDebugTag, "CameraScreen: Time to process: ${System.currentTimeMillis()-now}")
+                    rotatedBitmap = null
+                } catch (e: Exception) {
+                    sourceBitmap?.takeUnless { it.isRecycled }?.recycle()
+                    viewModel.releaseFailedFrame(rotatedBitmap)
                 }
-
-
             }
         )
         // Overlay canvas for bounding boxes
@@ -244,7 +236,7 @@ fun CameraScreen(viewModel: CameraViewModel) {
                     fontSize = 14.sp
                 )
                 Text(
-                    text = "Inference FPS: ${"%.1f".format(inferenceFps)}",
+                    text = "Completed pipeline FPS: ${"%.1f".format(inferenceFps)}",
                     modifier = Modifier
                         //.align(Alignment.TopStart)
                         .padding(16.dp,0.dp),
@@ -284,6 +276,33 @@ fun CameraScreen(viewModel: CameraViewModel) {
                 )
             }
 
+        }
+
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .background(Color.Black.copy(alpha = 0.65f))
+                .padding(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Button(
+                enabled = benchmark.controlsEnabled,
+                onClick = { viewModel.startBenchmark() }
+            ) {
+                Text("Start Benchmark")
+            }
+            Text(
+                text = benchmark.statusText,
+                color = Color.White,
+                textAlign = TextAlign.Center
+            )
+            benchmark.savedLocation?.let {
+                Text(text = it, color = Color.White, fontSize = 11.sp, textAlign = TextAlign.Center)
+            }
+            benchmark.error?.let {
+                Text(text = it, color = Color.Red, fontSize = 11.sp)
+            }
         }
     }
 }
