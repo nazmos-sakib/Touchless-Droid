@@ -2,8 +2,8 @@ package com.example.touchlessdroid.utils
 
 object Constants {
     const val MODEL_TFLITE_OLD_FLOAT32 = "yolo26n-pose_float32.tflite"
-    const val MODEL_TFLITE_OLD_INT8 = "yolo26n-pose_full_integer_quant.tflite"
-    const val MODEL_TFLITE_OLD_FP32 = "yolo26n-pose_integer_quant.tflite"
+    const val MODEL_TFLITE_OLD_INT8_FULL = "yolo26n-pose_full_integer_quant.tflite"
+    const val MODEL_TFLITE_OLD_INT8 = "yolo26n-pose_integer_quant.tflite"
 
     //ONNX
     const val MODEL_PATH_26N_POSE_MOBILE = "yolo26n-pose-mobile.onnx"

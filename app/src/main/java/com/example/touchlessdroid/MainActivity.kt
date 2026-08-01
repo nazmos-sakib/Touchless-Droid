@@ -33,6 +33,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -40,6 +41,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.touchlessdroid.domain.model.Screen
 import com.example.touchlessdroid.domain.model.InferenceConfiguration
+import com.example.touchlessdroid.monitoring.ResourceUsageLogger
 import com.example.touchlessdroid.ui.screens.components.DrawerContent
 import com.example.touchlessdroid.ui.screens.HomeScreen
 import com.example.touchlessdroid.ui.screens.InfoScreen
@@ -60,9 +62,13 @@ import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+    private lateinit var resourceUsageLogger: ResourceUsageLogger
+
     @androidx.annotation.RequiresPermission(allOf = [android.Manifest.permission.BLUETOOTH_SCAN, android.Manifest.permission.BLUETOOTH_CONNECT])
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        resourceUsageLogger = ResourceUsageLogger(applicationContext)
+        resourceUsageLogger.start(lifecycleScope)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) //keep the screen always on
 
         enableEdgeToEdge()
@@ -84,6 +90,11 @@ class MainActivity : ComponentActivity() {
     override fun onPause() {
         super.onPause()
         window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+    }
+
+    override fun onDestroy() {
+        resourceUsageLogger.stop()
+        super.onDestroy()
     }
 }
 

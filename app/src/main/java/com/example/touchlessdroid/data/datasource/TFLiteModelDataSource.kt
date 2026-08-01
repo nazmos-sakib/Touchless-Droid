@@ -45,7 +45,10 @@ class TFLiteModelDataSource(private val context: Context) {
             }
             PrecisionOption.INT8 -> {
                 //Constants.MODEL_TFLITE_INT8 //shape: [1, 3, 640, 640] - [1, 56, 8400]
-                Constants.MODEL_TFLITE_OLD_INT8 //full_integer_quant
+                Constants.MODEL_TFLITE_OLD_INT8_FULL //full_integer_quant
+            }
+            PrecisionOption.HALF_INT8 -> {
+                Constants.MODEL_TFLITE_OLD_INT8 //weight & activation integer_quant
             }
         }
 

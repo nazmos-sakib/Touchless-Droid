@@ -33,7 +33,7 @@ class ONNXModelDataSource(private val context: Context) {
 
         val modelPath = when (configuration.precision) {
             PrecisionOption.FP32 -> Constants.MODEL_ONNX_FP32
-            PrecisionOption.INT8 -> Constants.MODEL_ONNX_INT8
+            else -> Constants.MODEL_ONNX_INT8
         }
 
         val modelBytes = context.assets.open(modelPath).readBytes()
