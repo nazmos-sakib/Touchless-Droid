@@ -9,7 +9,8 @@ enum class DelegateOption(val label: String) {
 
 enum class PrecisionOption(val label: String) {
     FP32("FP32"),
-    INT8("INT8")
+    INT8("INT8"),
+    HALF_INT8("HALF_INT8")
 }
 
 enum class RuntimeOption(
@@ -26,7 +27,8 @@ enum class RuntimeOption(
         ),
         supportedPrecisions = listOf(
             PrecisionOption.FP32,
-            PrecisionOption.INT8
+            PrecisionOption.HALF_INT8,
+            PrecisionOption.INT8,
         )
     ),
 

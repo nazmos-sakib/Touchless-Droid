@@ -18,7 +18,7 @@
 
 static ncnn::Net yolo;
 static bool modelLoaded = false;
-static std::string currentDelegate = "CPU";
+static bool vulkanActive = false;
 
 //---------------------------Init model Native---
 extern "C"
@@ -48,10 +48,12 @@ Java_com_example_touchlessdroid_data_repository_NCNNPoseRepository_initModelNati
         return JNI_FALSE;
     }
 
-    //vulkan
-    if (useVulkan){
+    // clear() does not reset Net::opt, so always set the selected delegate.
+    yolo.opt.use_vulkan_compute = useVulkan;
+    if (useVulkan)
+    {
         ncnn::create_gpu_instance();
-        yolo.opt.use_vulkan_compute = true;
+        vulkanActive = true;
     }
     if (useIntQuant){}
     int ret1 = yolo.load_param(assetManager,"model.ncnn.param");
@@ -60,6 +62,13 @@ Java_com_example_touchlessdroid_data_repository_NCNNPoseRepository_initModelNati
     if (ret1 != 0 || ret2 != 0)
     {
         LOGD("MODEL LOAD FAILED");
+        yolo.clear();
+        yolo.opt.use_vulkan_compute = false;
+        if (vulkanActive)
+        {
+            ncnn::destroy_gpu_instance();
+            vulkanActive = false;
+        }
         return JNI_FALSE;
     }
 
@@ -217,7 +226,12 @@ Java_com_example_touchlessdroid_data_repository_NCNNPoseRepository_releaseNative
         JNIEnv *env, jobject thiz) {
     yolo.clear();
     modelLoaded = false;
-    ncnn::destroy_gpu_instance();
+    yolo.opt.use_vulkan_compute = false;
+    if (vulkanActive)
+    {
+        ncnn::destroy_gpu_instance();
+        vulkanActive = false;
+    }
     LOGD("model released");
 }
 
@@ -242,4 +256,3 @@ Java_com_example_touchlessdroid_MainActivity_logGpuInfo(
         LOGI("No Vulkan GPU detected");
     }
 }
-

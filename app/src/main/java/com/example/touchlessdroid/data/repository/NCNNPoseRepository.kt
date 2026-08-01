@@ -48,10 +48,10 @@ class NCNNPoseRepository (
 
     override fun initialize(configuration: InferenceConfiguration) {
         if (initialized) return
-        //val success = initModelNative(assetManager = context.assets, configuration.precision == PrecisionOption.INT8, configuration.delegate == DelegateOption.VULKAN)
-        val success = initModelNative(assetManager = context.assets, useIntQuant = false, useVulkan = false)
+        val success = initModelNative(assetManager = context.assets, configuration.precision == PrecisionOption.INT8, configuration.delegate == DelegateOption.VULKAN)
         initialized = success
         Log.d("NCNN_REPOSITORY", "model loaded = $success")
+        check(success) { "Failed to initialize the NCNN model" }
     }
 
     //----------------------------------------
@@ -59,6 +59,7 @@ class NCNNPoseRepository (
     //----------------------------------------
     override suspend fun detectPose(bitmap: Bitmap, revMapping: ReverseMapping,infConfig:InferenceConfiguration): List<DetectedPose> {
         initialize(infConfig)
+        check(initialized) { "NCNN inference requested before model initialization" }
         val letterboxResult = letterbox(bitmap)
 
         val raw = detectNative(letterboxResult.bitmap)
