@@ -20,6 +20,7 @@ import com.example.touchlessdroid.domain.model.camera.RobotCommand
 import com.example.touchlessdroid.domain.model.camera.toPose
 import com.example.touchlessdroid.domain.usecase.GestureDetector
 import com.example.touchlessdroid.domain.usecase.GestureToCommandUseCase
+import com.example.touchlessdroid.domain.usecase.RobotServer
 import com.example.touchlessdroid.utils.Constants.ImageDebugTag
 import com.example.touchlessdroid.utils.Constants.PerformanceDebugTag
 import com.example.touchlessdroid.utils.Constants.UiDebugTag
@@ -43,7 +44,8 @@ import javax.inject.Inject
 class CameraViewModel @Inject constructor(
     private val poseRepositoryFactory: PoseRepositoryFactory,
     private val gestureUseCase: GestureToCommandUseCase,
-    private val gestureDetector: GestureDetector
+    private val gestureDetector: GestureDetector,
+    private val robotServer: RobotServer
 ) : ViewModel() {
 
     private val inferenceFpsCounter = FpsCounter()
@@ -99,6 +101,8 @@ class CameraViewModel @Inject constructor(
             _command
                 //.distinctUntilChanged()
                 .collect { gesture ->
+                    // Store the latest command in the TCP server
+                    robotServer.setStatus(gesture.name)
                     val result = gestureUseCase.process(gesture)
                     when (result) {
                         is BlDataTransferStatus.Success -> { /* OK */ }

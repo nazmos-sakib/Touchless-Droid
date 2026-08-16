@@ -12,6 +12,7 @@ import com.example.touchlessdroid.data.repository.TFLitePoseDetectionRepository
 import com.example.touchlessdroid.domain.usecase.BluetoothManager
 import com.example.touchlessdroid.domain.usecase.GestureDetector
 import com.example.touchlessdroid.domain.usecase.GestureToCommandUseCase
+import com.example.touchlessdroid.domain.usecase.RobotServer
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -96,5 +97,13 @@ object AppModule {
     @Provides
     fun provideGestureDetector(): GestureDetector {
         return GestureDetector()
+    }
+
+    @Provides
+    @Singleton
+    fun provideRobotServer(
+        @ApplicationContext context: Context
+    ): RobotServer {
+        return RobotServer(context, port = 8080)
     }
 }

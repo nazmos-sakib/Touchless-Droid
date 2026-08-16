@@ -34,12 +34,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.touchlessdroid.domain.model.Screen
 import com.example.touchlessdroid.domain.model.InferenceConfiguration
+import com.example.touchlessdroid.domain.usecase.RobotServer
 import com.example.touchlessdroid.ui.screens.components.DrawerContent
 import com.example.touchlessdroid.ui.screens.HomeScreen
 import com.example.touchlessdroid.ui.screens.InfoScreen
@@ -56,10 +58,13 @@ import com.example.touchlessdroid.utils.PrecisionOption
 import com.example.touchlessdroid.utils.RuntimeOption
 import com.example.yolo26localposeanalyzer.ui.screens.PermissionDeniedScreen
 import dagger.hilt.android.AndroidEntryPoint
+import jakarta.inject.Inject
 import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+    @Inject
+    lateinit var robotServer: RobotServer
     @androidx.annotation.RequiresPermission(allOf = [android.Manifest.permission.BLUETOOTH_SCAN, android.Manifest.permission.BLUETOOTH_CONNECT])
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -70,7 +75,10 @@ class MainActivity : ComponentActivity() {
             TouchlessDroidTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     AppPermissionHandler {
-                        MainApp(Modifier.padding(innerPadding))
+                        MainApp(
+                            Modifier.padding(innerPadding),
+                            robotServer = robotServer
+                        )
                     }
                 }
             }
@@ -84,6 +92,10 @@ class MainActivity : ComponentActivity() {
     override fun onPause() {
         super.onPause()
         window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+    }
+    override fun onStop() {
+        robotServer.stopServer()
+        super.onStop()
     }
 }
 
@@ -155,10 +167,12 @@ fun AppPermissionHandler(
 
 @androidx.annotation.RequiresPermission(allOf = [android.Manifest.permission.BLUETOOTH_SCAN, android.Manifest.permission.BLUETOOTH_CONNECT])
 @Composable
-fun MainApp(modifier: Modifier = Modifier){
+fun MainApp(
+    modifier: Modifier = Modifier,
+    robotServer: RobotServer,
+){
 
-     val context = LocalContext.current
-    //val repository = ObjectDetectionRepository(LocalModelDataSource(context))
+    val serverRunning by robotServer.isRunning.collectAsStateWithLifecycle()
 
     // Bluetooth ViewModel
     val bluetoothViewModel: BluetoothViewModel = hiltViewModel()
@@ -210,8 +224,16 @@ fun MainApp(modifier: Modifier = Modifier){
             topBar = {
                 StatusBar(
                     bluetoothViewModel = bluetoothViewModel,
+                    serverRunning = serverRunning,
                     onMenuClick = {
                         scope.launch { drawerState.open() }
+                    },
+                    onServerToggle = {
+                        if (serverRunning) {
+                            robotServer.stopServer()
+                        } else {
+                            robotServer.startServer()
+                        }
                     }
                 )
             }
