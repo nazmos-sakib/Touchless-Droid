@@ -1,16 +1,10 @@
-<div align="center">
-
-# TouchlessDroid
-
-### Real-time, touch-free robot control through human body gestures
-
-TouchlessDroid is an Android application that turns body gestures into real-time movement commands for an ESP32-controlled robot. It brings together live camera processing, on-device pose estimation, gesture recognition, Bluetooth communication, and a modern Jetpack Compose interface in one complete mobile experience.
-
-**CameraX · YOLO26n-Pose · TFLite · ONNX Runtime · PyTorch Mobile · NCNN · Bluetooth · ESP32**
-
-</div>
-
 ---
+layout: default
+title: TouchlessDroid
+description: Real-time, touch-free robot control through human body gestures
+---
+
+TouchlessDroid turns body gestures into real-time movement commands for an ESP32-controlled robot. It brings together live camera processing, on-device pose estimation, gesture recognition, Bluetooth communication, and a modern Jetpack Compose interface in one complete Android experience.
 
 ## What TouchlessDroid does
 
@@ -106,18 +100,18 @@ The phone therefore performs perception and command generation, while the ESP32 
 
 The camera screen combines the live preview with pose visualization, the recognized command, Bluetooth state, active runtime/backend, and performance measurements.
 
-<table>
+<table class="screenshot-grid">
   <tr>
-    <td align="center" width="25%"><img src="./app/src/main/res/raw/ss_1_neutral.png" width="220" alt="Neutral gesture detected in TouchlessDroid"/><br/><b>Neutral</b></td>
-    <td align="center" width="25%"><img src="./app/src/main/res/raw/ss_2_start.png" width="220" alt="Start gesture detected in TouchlessDroid"/><br/><b>Start</b></td>
-    <td align="center" width="25%"><img src="./app/src/main/res/raw/ss_3_stop.png" width="220" alt="Stop gesture detected in TouchlessDroid"/><br/><b>Stop</b></td>
-    <td align="center" width="25%"><img src="./app/src/main/res/raw/ss_4_forward.png" width="220" alt="Forward gesture detected in TouchlessDroid"/><br/><b>Forward</b></td>
+    <td align="center" width="25%"><img src="{{ '/assets/images/ss_1_neutral.png' | relative_url }}" width="220" alt="Neutral gesture detected in TouchlessDroid"/><br/><b>Neutral</b></td>
+    <td align="center" width="25%"><img src="{{ '/assets/images/ss_2_start.png' | relative_url }}" width="220" alt="Start gesture detected in TouchlessDroid"/><br/><b>Start</b></td>
+    <td align="center" width="25%"><img src="{{ '/assets/images/ss_3_stop.png' | relative_url }}" width="220" alt="Stop gesture detected in TouchlessDroid"/><br/><b>Stop</b></td>
+    <td align="center" width="25%"><img src="{{ '/assets/images/ss_4_forward.png' | relative_url }}" width="220" alt="Forward gesture detected in TouchlessDroid"/><br/><b>Forward</b></td>
   </tr>
   <tr>
-    <td align="center" width="25%"><img src="./app/src/main/res/raw/ss_5_backward.png" width="220" alt="Backward gesture detected in TouchlessDroid"/><br/><b>Backward</b></td>
-    <td align="center" width="25%"><img src="./app/src/main/res/raw/ss_6_turn_left.png" width="220" alt="Turn-left gesture detected in TouchlessDroid"/><br/><b>Turn left</b></td>
-    <td align="center" width="25%"><img src="./app/src/main/res/raw/ss_7_turn_right.png" width="220" alt="Turn-right gesture detected in TouchlessDroid"/><br/><b>Turn right</b></td>
-    <td align="center" width="25%"><img src="./app/src/main/res/raw/ss_8_app_drawer.png" width="220" alt="TouchlessDroid application drawer"/><br/><b>App navigation</b></td>
+    <td align="center" width="25%"><img src="{{ '/assets/images/ss_5_backward.png' | relative_url }}" width="220" alt="Backward gesture detected in TouchlessDroid"/><br/><b>Backward</b></td>
+    <td align="center" width="25%"><img src="{{ '/assets/images/ss_6_turn_left.png' | relative_url }}" width="220" alt="Turn-left gesture detected in TouchlessDroid"/><br/><b>Turn left</b></td>
+    <td align="center" width="25%"><img src="{{ '/assets/images/ss_7_turn_right.png' | relative_url }}" width="220" alt="Turn-right gesture detected in TouchlessDroid"/><br/><b>Turn right</b></td>
+    <td align="center" width="25%"><img src="{{ '/assets/images/ss_8_app_drawer.png' | relative_url }}" width="220" alt="TouchlessDroid application drawer"/><br/><b>App navigation</b></td>
   </tr>
 </table>
 

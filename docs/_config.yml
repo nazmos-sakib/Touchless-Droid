@@ -1,0 +1,11 @@
+title: TouchlessDroid
+description: Real-time, touch-free robot control through human body gestures
+theme: jekyll-theme-cayman
+
+url: "https://nazmos-sakib.github.io"
+baseurl: "/Touchless-Droid"
+github_url: "https://github.com/nazmos-sakib/Touchless-Droid"
+apk_url: "https://github.com/nazmos-sakib/Touchless-Droid/releases/latest"
+
+show_downloads: false
+

@@ -1,0 +1,51 @@
+---
+---
+
+@import "{{ site.theme }}";
+
+.page-header {
+  background-image: linear-gradient(120deg, #101820, #157878);
+}
+
+.project-tagline {
+  max-width: 760px;
+  margin-right: auto;
+  margin-left: auto;
+}
+
+.project-stack {
+  margin-bottom: 1.75rem;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 0.95rem;
+  letter-spacing: 0.025em;
+}
+
+.main-content {
+  max-width: 76rem;
+}
+
+.main-content h2 {
+  margin-top: 2.75rem;
+}
+
+.main-content table {
+  display: table;
+  width: 100%;
+}
+
+.screenshot-grid img {
+  border-radius: 12px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
+}
+
+@media screen and (max-width: 720px) {
+  .main-content table {
+    display: block;
+    overflow-x: auto;
+  }
+
+  .project-stack {
+    font-size: 0.8rem;
+  }
+}
+
